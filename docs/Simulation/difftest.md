@@ -22,7 +22,7 @@ DPIC涉及到的文件及相关内容介绍见下：
 
     - `clock`           : 全局时钟
     - `coreid`          : 核id，目前只支持单核，直接传入0即可
-    - `index`           : 指令提交索引，该index用来区别多发射，从0开始计数。建议：多发射设计每个时钟周期只提交一条指令以方便定位错误。
+    - `index`           : 指令提交索引，该index用来区别多指令提交，从0开始计数。difftest支持任意宽度的指令提交，其比对粒度与提交宽度一致。如果设计的提交宽度大于6，那么需要使用者手动修改 `sims/verilator/testbench/include/difftest.h` 中的宏定义 `DIFFTEST_COMMIT_WIDTH`。
     - `valid`           : 提交有效信号，该信号拉高时，指令提交
     - `pc`              : 当前提交指令的pc
     - `instr`           : 当前提交指令的指令码

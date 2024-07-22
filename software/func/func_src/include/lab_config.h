@@ -11,17 +11,32 @@
 //NOP_INSERT: Insert 4 nop insts between every alu operation.
 //            Only for Lab3
 //==================================================================
-#define SHORT_TEST1 0
-#define NOP_INSERT 0
-#define TEST1 1
-#define TEST2 1
-#define TEST3 1
-#define TEST4 1
-#define TEST5 1
-#define TEST6 1
-#define TEST7 1
-#define TEST8 1
-#define TEST9 0
+#ifndef nscscc
+    #define SHORT_TEST1 0
+    #define NOP_INSERT 0
+    #define TEST1 1
+    #define TEST2 1
+    #define TEST3 1
+    #define TEST4 1
+    #define TEST5 1
+    #define TEST6 1
+    #define TEST7 1
+    #define TEST8 1
+    #define TEST9 0
 
-#define RUN_SIMU   1
+    #define RUN_SIMU   1
+#else
+    #define SHORT_TEST1 0
+    #define NOP_INSERT 0
+    #define TEST1 1
+    #define TEST2 1
+    #define TEST3 1
+    #define TEST4 1
+    #define TEST5 1
+    #define TEST6 0
+    #define TEST7 0
+    #define TEST8 0
+    #define TEST9 0
 
+    #define RUN_SIMU   0
+#endif

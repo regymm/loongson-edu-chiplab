@@ -209,45 +209,123 @@ wire        ram_bvalid ;
 wire        ram_bready ;
 
 
-// inst ram axi
-axi_ram ram(
-    .s_aclk         (aclk         ),
-    .s_aresetn      (aresetn      ),
+// // inst ram axi
+// axi_ram ram(
+//     .s_aclk         (aclk         ),
+//     .s_aresetn      (aresetn      ),
 
-    //ar
-    .s_axi_arid     (ram_arid     ),
-    .s_axi_araddr   (ram_araddr   ),
-    .s_axi_arlen    (ram_arlen    ),
-    .s_axi_arsize   (ram_arsize   ),
-    .s_axi_arburst  (ram_arburst  ),
-    .s_axi_arvalid  (ram_arvalid  ),
-    .s_axi_arready  (ram_arready  ),
-    //r
-    .s_axi_rid      (ram_rid      ),
-    .s_axi_rdata    (ram_rdata    ),
-    .s_axi_rresp    (ram_rresp    ),
-    .s_axi_rlast    (ram_rlast    ),
-    .s_axi_rvalid   (ram_rvalid   ),
-    .s_axi_rready   (ram_rready   ),
-    //aw
-    .s_axi_awid     (ram_awid     ),
-    .s_axi_awaddr   (ram_awaddr   ),
-    .s_axi_awlen    (ram_awlen    ),
-    .s_axi_awsize   (ram_awsize   ),
-    .s_axi_awburst  (ram_awburst  ),
-    .s_axi_awvalid  (ram_awvalid  ),
-    .s_axi_awready  (ram_awready  ),
-    //w
-    .s_axi_wdata    (ram_wdata    ),
-    .s_axi_wstrb    (ram_wstrb    ),
-    .s_axi_wlast    (ram_wlast    ),
-    .s_axi_wvalid   (ram_wvalid   ),
-    .s_axi_wready   (ram_wready   ),
-    //b
-    .s_axi_bid      (ram_bid      ),
-    .s_axi_bresp    (ram_bresp    ),
-    .s_axi_bvalid   (ram_bvalid   ),
-    .s_axi_bready   (ram_bready   )
+//     //ar
+//     .s_axi_arid     (ram_arid     ),
+//     .s_axi_araddr   (ram_araddr   ),
+//     .s_axi_arlen    (ram_arlen    ),
+//     .s_axi_arsize   (ram_arsize   ),
+//     .s_axi_arburst  (ram_arburst  ),
+//     .s_axi_arvalid  (ram_arvalid  ),
+//     .s_axi_arready  (ram_arready  ),
+//     //r
+//     .s_axi_rid      (ram_rid      ),
+//     .s_axi_rdata    (ram_rdata    ),
+//     .s_axi_rresp    (ram_rresp    ),
+//     .s_axi_rlast    (ram_rlast    ),
+//     .s_axi_rvalid   (ram_rvalid   ),
+//     .s_axi_rready   (ram_rready   ),
+//     //aw
+//     .s_axi_awid     (ram_awid     ),
+//     .s_axi_awaddr   (ram_awaddr   ),
+//     .s_axi_awlen    (ram_awlen    ),
+//     .s_axi_awsize   (ram_awsize   ),
+//     .s_axi_awburst  (ram_awburst  ),
+//     .s_axi_awvalid  (ram_awvalid  ),
+//     .s_axi_awready  (ram_awready  ),
+//     //w
+//     .s_axi_wdata    (ram_wdata    ),
+//     .s_axi_wstrb    (ram_wstrb    ),
+//     .s_axi_wlast    (ram_wlast    ),
+//     .s_axi_wvalid   (ram_wvalid   ),
+//     .s_axi_wready   (ram_wready   ),
+//     //b
+//     .s_axi_bid      (ram_bid      ),
+//     .s_axi_bresp    (ram_bresp    ),
+//     .s_axi_bvalid   (ram_bvalid   ),
+//     .s_axi_bready   (ram_bready   )
+// );
+
+wire  [31:0]    fpga_sram_raddr;
+wire  [31:0]    fpga_sram_rdata;
+wire            fpga_sram_ren;
+wire  [31:0]    fpga_sram_waddr;
+wire  [31:0]    fpga_sram_wdata;
+wire  [3:0]     fpga_sram_wen;
+
+soc_axi_sram_bridge #(
+    .BUS_WIDTH  ( 32 ),
+    .DATA_WIDTH ( 32 ),
+    .CPU_WIDTH  ( 32 ))
+ u_axi_inst_sram_bridge (
+    .aclk                    ( aclk         ),
+    .aresetn                 ( aresetn      ),
+
+    .m_araddr                ( ram_araddr   ),
+    .m_arburst               ( ram_arburst  ),
+    .m_arcache               ( 4'h0         ),
+    .m_arid                  ( ram_arid     ),
+    .m_arlen                 ( ram_arlen    ),
+    .m_arlock                ( 2'h0         ),
+    .m_arprot                ( 3'h0         ),
+    .m_arsize                ( ram_arsize   ),
+    .m_arvalid               ( ram_arvalid  ),
+    .m_arready               ( ram_arready  ),
+
+    .m_rready                ( ram_rready   ),
+    .m_rdata                 ( ram_rdata    ),
+    .m_rid                   ( ram_rid      ),
+    .m_rlast                 ( ram_rlast    ),
+    .m_rresp                 ( ram_rresp    ),
+    .m_rvalid                ( ram_rvalid   ),
+
+    .m_awaddr                ( ram_awaddr   ),
+    .m_awburst               ( ram_awburst  ),
+    .m_awcache               ( 4'h0         ),
+    .m_awid                  ( ram_awid     ),
+    .m_awlen                 ( ram_awlen    ),
+    .m_awlock                ( 2'h0         ),
+    .m_awprot                ( 3'h0         ),
+    .m_awsize                ( ram_awsize   ),
+    .m_awvalid               ( ram_awvalid  ),
+    .m_awready               ( ram_awready  ),
+
+    .m_wdata                 ( ram_wdata    ),
+    .m_wid                   ( ram_wid      ),
+    .m_wlast                 ( ram_wlast    ),
+    .m_wstrb                 ( ram_wstrb    ),
+    .m_wvalid                ( ram_wvalid   ),
+    .m_wready                ( ram_wready   ),
+
+    .m_bready                ( ram_bready   ),
+    .m_bid                   ( ram_bid      ),
+    .m_bresp                 ( ram_bresp    ),
+    .m_bvalid                ( ram_bvalid   ),
+
+    .ram_raddr               ( fpga_sram_raddr  ),
+    .ram_ren                 ( fpga_sram_ren    ),
+    .ram_waddr               ( fpga_sram_waddr  ),
+    .ram_wdata               ( fpga_sram_wdata  ),
+    .ram_wen                 ( fpga_sram_wen    ),
+    .ram_rdata               ( fpga_sram_rdata  )
+);
+
+//1MByte SRAM
+fpga_sram_dp #(
+.AW ( 18 )
+)u_fpga_sram (
+    .CLK                     ( aclk              ),
+    .ram_raddr               ( fpga_sram_raddr[19:2]   ),
+    .ram_ren                 ( fpga_sram_ren     ),
+    .ram_rdata               ( fpga_sram_rdata   ),
+    .ram_waddr               ( fpga_sram_waddr[19:2]   ),
+    .ram_wdata               ( fpga_sram_wdata   ),
+    .ram_wen                 ( fpga_sram_wen     )
+    
 );
 
 //ar

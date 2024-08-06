@@ -76,7 +76,10 @@ module soc_axi_lite_top #(parameter SIMULATION=1'b0)
     input  [7 :0] switch, 
     output [3 :0] btn_key_col,
     input  [3 :0] btn_key_row,
-    input  [1 :0] btn_step
+    input  [1 :0] btn_step,
+    //------uart-------
+    input  rx_pin,
+    output tx_pin
 );
 //debug signals
 wire [31:0] debug_wb_pc;
@@ -85,40 +88,79 @@ wire [4 :0] debug_wb_rf_wnum;
 wire [31:0] debug_wb_rf_wdata;
 
 //clk and resetn
+reg clk_91m;
 wire cpu_clk;
 wire sys_clk;
-reg cpu_resetn_t, cpu_resetn;
-reg sys_resetn_t, sys_resetn;
-always @(posedge cpu_clk)
-begin
-    cpu_resetn_t <= resetn;
-    cpu_resetn   <= cpu_resetn_t;
-end
-always @(posedge sys_clk)
-begin
-    sys_resetn_t <= resetn;
-    sys_resetn   <= sys_resetn_t;
-end
-//simulation clk.
-reg clk_91m;
-initial
-begin 
-    clk_91m = 1'b0;
-end
-always #5.5 clk_91m = ~clk_91m;
-generate if(SIMULATION && `SIMU_USE_PLL==0)
-begin: speedup_simulation
+wire core_rst;
+wire pll_locked;
+wire cpu_resetn;
+wire sys_resetn;
+wire confreg_resetn;
+wire uart_debug_resetn;
+
+generate if(SIMULATION && `SIMU_USE_PLL==0) begin: sim_clk
+    //simulation clk.
+    initial begin 
+        clk_91m = 1'b0;
+    end
+    always #5.5 clk_91m = ~clk_91m;
+
     assign cpu_clk = clk_91m;
     assign sys_clk = clk;
-end
-else
-begin: pll
-    clk_pll clk_pll
-    (
-        .clk_in1 (clk    ),
-        .cpu_clk (cpu_clk),
-        .sys_clk (sys_clk)
+    rst_sync u_rst_sys(
+        .clk(sys_clk),
+        .rst_n_in(resetn),
+        .rst_n_out(sys_resetn)
     );
+    rst_sync u_rst_cpu(
+        .clk(cpu_clk),
+        .rst_n_in(resetn),
+        .rst_n_out(cpu_resetn)
+    );
+    assign uart_debug_resetn = 1'b0;
+    assign confreg_resetn    = sys_resetn;
+end
+else if(SIMULATION && `SIMU_USE_PLL==1) begin: sim_pll_clk
+    clk_pll instance_name(
+        .cpu_clk    (cpu_clk),
+        .sys_clk    (sys_clk),
+        .resetn     (resetn),
+        .locked     (pll_locked),
+        .clk_in1    (clk)
+    );
+    rst_sync u_rst_sys(
+        .clk(sys_clk),
+        .rst_n_in(pll_locked),
+        .rst_n_out(sys_resetn)
+    );
+    rst_sync u_rst_cpu(
+        .clk(cpu_clk),
+        .rst_n_in(pll_locked),
+        .rst_n_out(cpu_resetn)
+    );
+    assign uart_debug_resetn = 1'b0;
+    assign confreg_resetn    = sys_resetn;
+end
+else begin: fpga_pll
+    clk_pll u_clk_pll(
+        .cpu_clk    (cpu_clk),
+        .sys_clk    (sys_clk),
+        .resetn     (resetn),
+        .locked     (pll_locked),
+        .clk_in1    (clk)
+    );
+    rst_sync u_rst_sys(
+        .clk(sys_clk),
+        .rst_n_in(pll_locked),
+        .rst_n_out(sys_resetn)
+    );
+    rst_sync u_rst_cpu(
+        .clk(cpu_clk),
+        .rst_n_in(core_rst),
+        .rst_n_out(cpu_resetn)
+    );
+    assign uart_debug_resetn = sys_resetn;
+    assign confreg_resetn    = core_rst;
 end
 endgenerate
 
@@ -310,6 +352,82 @@ wire [3 :0] conf_bid    ;
 wire [1 :0] conf_bresp  ;
 wire        conf_bvalid ;
 wire        conf_bready ;
+
+//uart_debug
+wire  uart_debug_arready;
+wire  [ 3:0]  uart_debug_rid;
+wire  [31:0]  uart_debug_rdata;
+wire  [ 1:0]  uart_debug_rresp;
+wire  uart_debug_rlast;
+wire  uart_debug_rvalid;
+wire  uart_debug_awready;
+wire  uart_debug_wready;
+wire  [ 3:0]  uart_debug_bid;
+wire  [ 1:0]  uart_debug_bresp;
+wire  uart_debug_bvalid;
+wire  [ 3:0]  uart_debug_arid;
+wire  [31:0]  uart_debug_araddr;
+wire  [ 3:0]  uart_debug_arlen;
+wire  [ 2:0]  uart_debug_arsize;
+wire  [ 1:0]  uart_debug_arburst;
+wire  [ 1:0]  uart_debug_arlock;
+wire  [ 3:0]  uart_debug_arcache;
+wire  [ 2:0]  uart_debug_arprot;
+wire  uart_debug_arvalid;
+wire  uart_debug_rready;
+wire  [ 3:0]  uart_debug_awid;
+wire  [31:0]  uart_debug_awaddr;
+wire  [ 3:0]  uart_debug_awlen;
+wire  [ 2:0]  uart_debug_awsize;
+wire  [ 1:0]  uart_debug_awburst;
+wire  [ 1:0]  uart_debug_awlock;
+wire  [ 3:0]  uart_debug_awcache;
+wire  [ 2:0]  uart_debug_awprot;
+wire  uart_debug_awvalid;
+wire  [ 3:0]  uart_debug_wid;
+wire  [31:0]  uart_debug_wdata;
+wire  [ 3:0]  uart_debug_wstrb;
+wire  uart_debug_wlast;
+wire  uart_debug_wvalid;
+wire  uart_debug_bready;
+
+//uart
+wire  uart_arready;
+wire  [ 3:0]  uart_rid;
+wire  [31:0]  uart_rdata;
+wire  [ 1:0]  uart_rresp;
+wire  uart_rlast;
+wire  uart_rvalid;
+wire  uart_awready;
+wire  uart_wready;
+wire  [ 3:0]  uart_bid;
+wire  [ 1:0]  uart_bresp;
+wire  uart_bvalid;
+wire  [ 3:0]  uart_arid;
+wire  [31:0]  uart_araddr;
+wire  [ 3:0]  uart_arlen;
+wire  [ 2:0]  uart_arsize;
+wire  [ 1:0]  uart_arburst;
+wire  [ 1:0]  uart_arlock;
+wire  [ 3:0]  uart_arcache;
+wire  [ 2:0]  uart_arprot;
+wire  uart_arvalid;
+wire  uart_rready;
+wire  [ 3:0]  uart_awid;
+wire  [31:0]  uart_awaddr;
+wire  [ 3:0]  uart_awlen;
+wire  [ 2:0]  uart_awsize;
+wire  [ 1:0]  uart_awburst;
+wire  [ 1:0]  uart_awlock;
+wire  [ 3:0]  uart_awcache;
+wire  [ 2:0]  uart_awprot;
+wire  uart_awvalid;
+wire  [ 3:0]  uart_wid;
+wire  [31:0]  uart_wdata;
+wire  [ 3:0]  uart_wstrb;
+wire  uart_wlast;
+wire  uart_wvalid;
+wire  uart_bready;
 
 //for lab6
 wire [4 :0] ram_random_mask;
@@ -550,90 +668,131 @@ axi_clock_converter  u_axi_clock_sync(
   .m_axi_rready  (cpu_sync_rready  ) 
 );
 
+uart_debug  u_uart_debug (
+    .clk                     ( sys_clk              ),
+    .rst_n                   ( uart_debug_resetn    ),
+    .arready                 ( uart_debug_arready   ),
+    .rid                     ( uart_debug_rid       ),
+    .rdata                   ( uart_debug_rdata     ),
+    .rresp                   ( uart_debug_rresp     ),
+    .rlast                   ( uart_debug_rlast     ),
+    .rvalid                  ( uart_debug_rvalid    ),
+    .awready                 ( uart_debug_awready   ),
+    .wready                  ( uart_debug_wready    ),
+    .bid                     ( uart_debug_bid       ),
+    .bresp                   ( uart_debug_bresp     ),
+    .bvalid                  ( uart_debug_bvalid    ),
 
-axi_crossbar_1x2 u_axi_crossbar_1x2(
-    .aclk             ( sys_clk              ), // i, 1                 
-    .aresetn          ( sys_resetn           ), // i, 1                 
+    .arid                    ( uart_debug_arid      ),
+    .araddr                  ( uart_debug_araddr    ),
+    .arlen                   ( uart_debug_arlen     ),
+    .arsize                  ( uart_debug_arsize    ),
+    .arburst                 ( uart_debug_arburst   ),
+    .arlock                  ( uart_debug_arlock    ),
+    .arcache                 ( uart_debug_arcache   ),
+    .arprot                  ( uart_debug_arprot    ),
+    .arvalid                 ( uart_debug_arvalid   ),
+    .rready                  ( uart_debug_rready    ),
+    .awid                    ( uart_debug_awid      ),
+    .awaddr                  ( uart_debug_awaddr    ),
+    .awlen                   ( uart_debug_awlen     ),
+    .awsize                  ( uart_debug_awsize    ),
+    .awburst                 ( uart_debug_awburst   ),
+    .awlock                  ( uart_debug_awlock    ),
+    .awcache                 ( uart_debug_awcache   ),
+    .awprot                  ( uart_debug_awprot    ),
+    .awvalid                 ( uart_debug_awvalid   ),
+    .wid                     ( uart_debug_wid       ),
+    .wdata                   ( uart_debug_wdata     ),
+    .wstrb                   ( uart_debug_wstrb     ),
+    .wlast                   ( uart_debug_wlast     ),
+    .wvalid                  ( uart_debug_wvalid    ),
+    .bready                  ( uart_debug_bready    ),
+    .core_rst                ( core_rst             )
+);
 
-    .s_axi_arid       ( cpu_sync_arid        ),
-    .s_axi_araddr     ( cpu_sync_araddr      ),
-    .s_axi_arlen      ( cpu_sync_arlen[3:0]  ),
-    .s_axi_arsize     ( cpu_sync_arsize      ),
-    .s_axi_arburst    ( cpu_sync_arburst     ),
-    .s_axi_arlock     ( cpu_sync_arlock      ),
-    .s_axi_arcache    ( cpu_sync_arcache     ),
-    .s_axi_arprot     ( cpu_sync_arprot      ),
-    .s_axi_arqos      ( 4'd0                 ),
-    .s_axi_arvalid    ( cpu_sync_arvalid     ),
-    .s_axi_arready    ( cpu_sync_arready     ),
-    .s_axi_rid        ( cpu_sync_rid         ),
-    .s_axi_rdata      ( cpu_sync_rdata       ),
-    .s_axi_rresp      ( cpu_sync_rresp       ),
-    .s_axi_rlast      ( cpu_sync_rlast       ),
-    .s_axi_rvalid     ( cpu_sync_rvalid      ),
-    .s_axi_rready     ( cpu_sync_rready      ),
-    .s_axi_awid       ( cpu_sync_awid        ),
-    .s_axi_awaddr     ( cpu_sync_awaddr      ),
-    .s_axi_awlen      ( cpu_sync_awlen[3:0]  ),
-    .s_axi_awsize     ( cpu_sync_awsize      ),
-    .s_axi_awburst    ( cpu_sync_awburst     ),
-    .s_axi_awlock     ( cpu_sync_awlock      ),
-    .s_axi_awcache    ( cpu_sync_awcache     ),
-    .s_axi_awprot     ( cpu_sync_awprot      ),
-    .s_axi_awqos      ( 4'd0                 ),
-    .s_axi_awvalid    ( cpu_sync_awvalid     ),
-    .s_axi_awready    ( cpu_sync_awready     ),
-    .s_axi_wid        ( cpu_sync_wid         ),
-    .s_axi_wdata      ( cpu_sync_wdata       ),
-    .s_axi_wstrb      ( cpu_sync_wstrb       ),
-    .s_axi_wlast      ( cpu_sync_wlast       ),
-    .s_axi_wvalid     ( cpu_sync_wvalid      ),
-    .s_axi_wready     ( cpu_sync_wready      ),
-    .s_axi_bid        ( cpu_sync_bid         ),
-    .s_axi_bresp      ( cpu_sync_bresp       ),
-    .s_axi_bvalid     ( cpu_sync_bvalid      ),
-    .s_axi_bready     ( cpu_sync_bready      ),
+axi_crossbar_2x3 u_axi_crossbar_2x3 (
+    .aclk               (sys_clk), 
+    .aresetn            (sys_resetn), 
 
-    .m_axi_arid       ( {ram_arid   ,conf_arid   } ),
-    .m_axi_araddr     ( {ram_araddr ,conf_araddr } ),
-    .m_axi_arlen      ( {ram_arlen  ,conf_arlen  } ),
-    .m_axi_arsize     ( {ram_arsize ,conf_arsize } ),
-    .m_axi_arburst    ( {ram_arburst,conf_arburst} ),
-    .m_axi_arlock     ( {ram_arlock ,conf_arlock } ),
-    .m_axi_arcache    ( {ram_arcache,conf_arcache} ),
-    .m_axi_arprot     ( {ram_arprot ,conf_arprot } ),
-    .m_axi_arqos      (                            ),
-    .m_axi_arvalid    ( {ram_arvalid,conf_arvalid} ),
-    .m_axi_arready    ( {ram_arready,conf_arready} ),
-    .m_axi_rid        ( {ram_rid    ,conf_rid    } ),
-    .m_axi_rdata      ( {ram_rdata  ,conf_rdata  } ),
-    .m_axi_rresp      ( {ram_rresp  ,conf_rresp  } ),
-    .m_axi_rlast      ( {ram_rlast  ,conf_rlast  } ),
-    .m_axi_rvalid     ( {ram_rvalid ,conf_rvalid } ),
-    .m_axi_rready     ( {ram_rready ,conf_rready } ),
-    .m_axi_awid       ( {ram_awid   ,conf_awid   } ),
-    .m_axi_awaddr     ( {ram_awaddr ,conf_awaddr } ),
-    .m_axi_awlen      ( {ram_awlen  ,conf_awlen  } ),
-    .m_axi_awsize     ( {ram_awsize ,conf_awsize } ),
-    .m_axi_awburst    ( {ram_awburst,conf_awburst} ),
-    .m_axi_awlock     ( {ram_awlock ,conf_awlock } ),
-    .m_axi_awcache    ( {ram_awcache,conf_awcache} ),
-    .m_axi_awprot     ( {ram_awprot ,conf_awprot } ),
-    .m_axi_awqos      (                            ),
-    .m_axi_awvalid    ( {ram_awvalid,conf_awvalid} ),
-    .m_axi_awready    ( {ram_awready,conf_awready} ),
-    .m_axi_wid        ( {ram_wid    ,conf_wid    } ),
-    .m_axi_wdata      ( {ram_wdata  ,conf_wdata  } ),
-    .m_axi_wstrb      ( {ram_wstrb  ,conf_wstrb  } ),
-    .m_axi_wlast      ( {ram_wlast  ,conf_wlast  } ),
-    .m_axi_wvalid     ( {ram_wvalid ,conf_wvalid } ),
-    .m_axi_wready     ( {ram_wready ,conf_wready } ),
-    .m_axi_bid        ( {ram_bid    ,conf_bid    } ),
-    .m_axi_bresp      ( {ram_bresp  ,conf_bresp  } ),
-    .m_axi_bvalid     ( {ram_bvalid ,conf_bvalid } ),
-    .m_axi_bready     ( {ram_bready ,conf_bready } )
+    .s_axi_awid         ( {uart_debug_awid      ,cpu_sync_awid}),        
+    .s_axi_awaddr       ( {uart_debug_awaddr    ,cpu_sync_awaddr}),    
+    .s_axi_awlen        ( {uart_debug_awlen     ,cpu_sync_awlen}),      
+    .s_axi_awsize       ( {uart_debug_awsize    ,cpu_sync_awsize}),    
+    .s_axi_awburst      ( {uart_debug_awburst   ,cpu_sync_awburst}), 
+    .s_axi_awlock       ( {uart_debug_awlock    ,cpu_sync_awlock}),    
+    .s_axi_awcache      ( {uart_debug_awcache   ,cpu_sync_awcache}), 
+    .s_axi_awprot       ( {uart_debug_awprot    ,cpu_sync_awprot}),    
+    .s_axi_awqos        ( 8'h0),     
+    .s_axi_awvalid      ( {uart_debug_awvalid   ,cpu_sync_awvalid}),  
+    .s_axi_awready      ( {uart_debug_awready   ,cpu_sync_awready}),  
+    .s_axi_wid          ( {uart_debug_wid       ,cpu_sync_wid}),          
+    .s_axi_wdata        ( {uart_debug_wdata     ,cpu_sync_wdata}),     
+    .s_axi_wstrb        ( {uart_debug_wstrb     ,cpu_sync_wstrb}),     
+    .s_axi_wlast        ( {uart_debug_wlast     ,cpu_sync_wlast}),     
+    .s_axi_wvalid       ( {uart_debug_wvalid    ,cpu_sync_wvalid}),  
+    .s_axi_wready       ( {uart_debug_wready    ,cpu_sync_wready}),  
+    .s_axi_bid          ( {uart_debug_bid       ,cpu_sync_bid}),          
+    .s_axi_bresp        ( {uart_debug_bresp     ,cpu_sync_bresp}),     
+    .s_axi_bvalid       ( {uart_debug_bvalid    ,cpu_sync_bvalid}),  
+    .s_axi_bready       ( {uart_debug_bready    ,cpu_sync_bready}),  
+    .s_axi_arid         ( {uart_debug_arid      ,cpu_sync_arid}),        
+    .s_axi_araddr       ( {uart_debug_araddr    ,cpu_sync_araddr}),    
+    .s_axi_arlen        ( {uart_debug_arlen     ,cpu_sync_arlen}),      
+    .s_axi_arsize       ( {uart_debug_arsize    ,cpu_sync_arsize}),    
+    .s_axi_arburst      ( {uart_debug_arburst   ,cpu_sync_arburst} ), 
+    .s_axi_arlock       ( {uart_debug_arlock    ,cpu_sync_arlock} ),    
+    .s_axi_arcache      ( {uart_debug_arcache   ,cpu_sync_arcache} ), 
+    .s_axi_arprot       ( {uart_debug_arprot    ,cpu_sync_arprot} ),    
+    .s_axi_arqos        ( 8'h0),      
+    .s_axi_arvalid      ( {uart_debug_arvalid    ,cpu_sync_arvalid} ), 
+    .s_axi_arready      ( {uart_debug_arready    ,cpu_sync_arready} ), 
+    .s_axi_rid          ( {uart_debug_rid        ,cpu_sync_rid} ),          
+    .s_axi_rdata        ( {uart_debug_rdata      ,cpu_sync_rdata} ),    
+    .s_axi_rresp        ( {uart_debug_rresp      ,cpu_sync_rresp} ),    
+    .s_axi_rlast        ( {uart_debug_rlast      ,cpu_sync_rlast} ),    
+    .s_axi_rvalid       ( {uart_debug_rvalid     ,cpu_sync_rvalid} ), 
+    .s_axi_rready       ( {uart_debug_rready     ,cpu_sync_rready} ), 
 
- );
+    .m_axi_arid         ( {uart_arid    ,ram_arid   ,conf_arid   } ),
+    .m_axi_araddr       ( {uart_araddr  ,ram_araddr ,conf_araddr } ),
+    .m_axi_arlen        ( {uart_arlen   ,ram_arlen  ,conf_arlen  } ),
+    .m_axi_arsize       ( {uart_arsize  ,ram_arsize ,conf_arsize } ),
+    .m_axi_arburst      ( {uart_arburst ,ram_arburst,conf_arburst} ),
+    .m_axi_arlock       ( {uart_arlock  ,ram_arlock ,conf_arlock } ),
+    .m_axi_arcache      ( {uart_arcache ,ram_arcache,conf_arcache} ),
+    .m_axi_arprot       ( {uart_arprot  ,ram_arprot ,conf_arprot } ),
+    .m_axi_arqos        (                            ),
+    .m_axi_arvalid      ( {uart_arvalid ,ram_arvalid,conf_arvalid} ),
+    .m_axi_arready      ( {uart_arready ,ram_arready,conf_arready} ),
+    .m_axi_rid          ( {uart_rid     ,ram_rid    ,conf_rid    } ),
+    .m_axi_rdata        ( {uart_rdata   ,ram_rdata  ,conf_rdata  } ),
+    .m_axi_rresp        ( {uart_rresp   ,ram_rresp  ,conf_rresp  } ),
+    .m_axi_rlast        ( {uart_rlast   ,ram_rlast  ,conf_rlast  } ),
+    .m_axi_rvalid       ( {uart_rvalid  ,ram_rvalid ,conf_rvalid } ),
+    .m_axi_rready       ( {uart_rready  ,ram_rready ,conf_rready } ),
+    .m_axi_awid         ( {uart_awid    ,ram_awid   ,conf_awid   } ),
+    .m_axi_awaddr       ( {uart_awaddr  ,ram_awaddr ,conf_awaddr } ),
+    .m_axi_awlen        ( {uart_awlen   ,ram_awlen  ,conf_awlen  } ),
+    .m_axi_awsize       ( {uart_awsize  ,ram_awsize ,conf_awsize } ),
+    .m_axi_awburst      ( {uart_awburst ,ram_awburst,conf_awburst} ),
+    .m_axi_awlock       ( {uart_awlock  ,ram_awlock ,conf_awlock } ),
+    .m_axi_awcache      ( {uart_awcache ,ram_awcache,conf_awcache} ),
+    .m_axi_awprot       ( {uart_awprot  ,ram_awprot ,conf_awprot } ),
+    .m_axi_awqos        (                            ),
+    .m_axi_awvalid      ( {uart_awvalid ,ram_awvalid,conf_awvalid} ),
+    .m_axi_awready      ( {uart_awready ,ram_awready,conf_awready} ),
+    .m_axi_wid          ( {uart_wid     ,ram_wid    ,conf_wid    } ),
+    .m_axi_wdata        ( {uart_wdata   ,ram_wdata  ,conf_wdata  } ),
+    .m_axi_wstrb        ( {uart_wstrb   ,ram_wstrb  ,conf_wstrb  } ),
+    .m_axi_wlast        ( {uart_wlast   ,ram_wlast  ,conf_wlast  } ),
+    .m_axi_wvalid       ( {uart_wvalid  ,ram_wvalid ,conf_wvalid } ),
+    .m_axi_wready       ( {uart_wready  ,ram_wready ,conf_wready } ),
+    .m_axi_bid          ( {uart_bid     ,ram_bid    ,conf_bid    } ),
+    .m_axi_bresp        ( {uart_bresp   ,ram_bresp  ,conf_bresp  } ),
+    .m_axi_bvalid       ( {uart_bvalid  ,ram_bvalid ,conf_bvalid } ),
+    .m_axi_bready       ( {uart_bready  ,ram_bready ,conf_bready } )
+);
 
 //axi ram
 axi_wrap_ram u_axi_ram
@@ -689,9 +848,9 @@ axi_wrap_ram u_axi_ram
 //confreg
 confreg #(.SIMULATION(SIMULATION)) u_confreg
 (
-    .timer_clk   ( sys_clk    ),  // i, 1   
-    .aclk        ( sys_clk    ),  // i, 1   
-    .aresetn     ( sys_resetn ),  // i, 1    
+    .timer_clk   ( sys_clk          ),  // i, 1   
+    .aclk        ( sys_clk          ),  // i, 1   
+    .aresetn     ( confreg_resetn   ),  // i, 1    
 
     .arid        (conf_arid    ),
     .araddr      (conf_araddr  ),
@@ -740,6 +899,50 @@ confreg #(.SIMULATION(SIMULATION)) u_confreg
     .btn_key_col ( btn_key_col),  // o, 4          
     .btn_key_row ( btn_key_row),  // i, 4           
     .btn_step    ( btn_step   )   // i, 2   
+);
+
+uart_wrap  u_uart_wrap (
+    .aclk                    ( sys_clk      ),
+    .aresetn                 ( sys_resetn   ),
+    .arid                    ( uart_arid      ),
+    .araddr                  ( uart_araddr    ),
+    .arlen                   ( uart_arlen     ),
+    .arsize                  ( uart_arsize    ),
+    .arburst                 ( uart_arburst   ),
+    .arlock                  ( uart_arlock    ),
+    .arcache                 ( uart_arcache   ),
+    .arprot                  ( uart_arprot    ),
+    .arvalid                 ( uart_arvalid   ),
+    .rready                  ( uart_rready    ),
+    .awid                    ( uart_awid      ),
+    .awaddr                  ( uart_awaddr    ),
+    .awlen                   ( uart_awlen     ),
+    .awsize                  ( uart_awsize    ),
+    .awburst                 ( uart_awburst   ),
+    .awlock                  ( uart_awlock    ),
+    .awcache                 ( uart_awcache   ),
+    .awprot                  ( uart_awprot    ),
+    .awvalid                 ( uart_awvalid   ),
+    .wid                     ( uart_wid       ),
+    .wdata                   ( uart_wdata     ),
+    .wstrb                   ( uart_wstrb     ),
+    .wlast                   ( uart_wlast     ),
+    .wvalid                  ( uart_wvalid    ),
+    .bready                  ( uart_bready    ),
+    .rx_pin                  ( rx_pin    ),
+
+    .arready                 ( uart_arready   ),
+    .rid                     ( uart_rid       ),
+    .rdata                   ( uart_rdata     ),
+    .rresp                   ( uart_rresp     ),
+    .rlast                   ( uart_rlast     ),
+    .rvalid                  ( uart_rvalid    ),
+    .awready                 ( uart_awready   ),
+    .wready                  ( uart_wready    ),
+    .bid                     ( uart_bid       ),
+    .bresp                   ( uart_bresp     ),
+    .bvalid                  ( uart_bvalid    ),
+    .tx_pin                  ( tx_pin    )
 );
 
 endmodule

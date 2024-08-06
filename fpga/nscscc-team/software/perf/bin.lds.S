@@ -1,89 +1,168 @@
 
 OUTPUT_ARCH(loongarch)
 ENTRY(_start)
+
+MEMORY
+{
+  isram (rwxai) : ORIGIN = 0x1c000000, LENGTH = 512K
+  dsram (rwxai) : ORIGIN = 0x1c080000, LENGTH = 512K  
+}
+
 SECTIONS
 {
-  /* Read-only sections, merged into text segment: */
-  . = 0x1c000000;
-  .text      : 
+  __stack_size = DEFINED(__stack_size) ? __stack_size : 64K;
+
+  .init           :
+  {
+    KEEP (*(SORT_NONE(.init)))
+  } >isram AT>isram 
+
+  .ilalign         :
+  {
+    . = ALIGN(4);
+    PROVIDE( _isram_lma = . );
+  } >isram AT>isram 
+
+  .ialign         :
+  {
+    PROVIDE( _isram = . );
+  } >isram AT>isram 
+
+  .text           :
   {
     _ftext = . ;
-    *(.text)
-    rodata_end = .;
-  } =0
-  _etext = .;
+    *(.text.unlikely .text.unlikely.*)
+    *(.text.startup .text.startup.*)
+    *(.text .text.*)
+    *(.gnu.linkonce.t.*)
+  } >isram AT>isram 
+
+  .fini           :
+  {
+    KEEP (*(SORT_NONE(.fini)))
+  } >isram AT>isram 
+
+  . = ALIGN(4);
+
+  PROVIDE (__etext = .);
+  PROVIDE (_etext = .);
   PROVIDE (etext = .);
-  .fini      : { *(.fini)    } =0
-  .data    : AT(rodata_end)
-  {
-    *(.rodata*)
-    *(.reginfo)
-    *(.init)
-    *(.stub)
-    /* .gnu.warning sections are handled specially by elf32.em.  */
-    *(.gnu.warning)
-    _fdata = . ;
-    _stack = _fdata + MEMSIZE -32;
-    *(.data)
-    *(.data*) 
-                __CTOR_LIST__ = .;
-                LONG((__CTOR_END__ - __CTOR_LIST__) / 4 - 2)
-               *(.ctors)
-                LONG(0)
-                __CTOR_END__ = .;
-                __DTOR_LIST__ = .;
-                LONG((__DTOR_END__ - __DTOR_LIST__) / 4 - 2)
-               *(.dtors)
-                LONG(0)
-                __DTOR_END__ = .;
-  /*_gp = ALIGN(16) + 0x7ff0;*/
-    *(.got.plt) *(.got)
-  /* We want the small data sections together, so single-instruction offsets
-     can access them all, and initialized data all before uninitialized, so
-     we can shorten the on-disk segment size.  */
-  *(.sdata) 
-   *(.lit8) 
-   *(.lit4) 
-}
-  _edata  =  .;
-  PROVIDE (edata = .);
+  PROVIDE( _eisram = . );
 
-  data_size = SIZEOF(.data);
-  data_load_start = LOADADDR(.data);
-  __bss_start = .;
-  _fbss = .;
-  .sbss      : { *(.sbss) *(.scommon) }
-  .bss       :
+
+  .preinit_array  :
   {
-   *(.dynbss)
-   *(.bss)
-   *(COMMON)
-  }
+    PROVIDE_HIDDEN (__preinit_array_start = .);
+    KEEP (*(.preinit_array))
+    PROVIDE_HIDDEN (__preinit_array_end = .);
+  } >isram AT>isram 
+
+  .init_array     :
+  {
+    PROVIDE_HIDDEN (__init_array_start = .);
+    KEEP (*(SORT_BY_INIT_PRIORITY(.init_array.*) SORT_BY_INIT_PRIORITY(.ctors.*)))
+    KEEP (*(.init_array EXCLUDE_FILE (*crtbegin.o *crtbegin?.o *crtend.o *crtend?.o ) .ctors))
+    PROVIDE_HIDDEN (__init_array_end = .);
+  } >isram AT>isram 
+
+  .fini_array     :
+  {
+    PROVIDE_HIDDEN (__fini_array_start = .);
+    KEEP (*(SORT_BY_INIT_PRIORITY(.fini_array.*) SORT_BY_INIT_PRIORITY(.dtors.*)))
+    KEEP (*(.fini_array EXCLUDE_FILE (*crtbegin.o *crtbegin?.o *crtend.o *crtend?.o ) .dtors))
+    PROVIDE_HIDDEN (__fini_array_end = .);
+  } >isram AT>isram 
+
+  .ctors          :
+  {
+    /* gcc uses crtbegin.o to find the start of
+       the constructors, so we make sure it is
+       first.  Because this is a wildcard, it
+       doesn't matter if the user does not
+       actually link against crtbegin.o; the
+       linker won't look for a file to match a
+       wildcard.  The wildcard also means that it
+       doesn't matter which directory crtbegin.o
+       is in.  */
+    KEEP (*crtbegin.o(.ctors))
+    KEEP (*crtbegin?.o(.ctors))
+    /* We don't want to include the .ctor section from
+       the crtend.o file until after the sorted ctors.
+       The .ctor section from the crtend file contains the
+       end of ctors marker and it must be last */
+    KEEP (*(EXCLUDE_FILE (*crtend.o *crtend?.o ) .ctors))
+    KEEP (*(SORT(.ctors.*)))
+    KEEP (*(.ctors))
+  } >isram AT>isram 
+
+  .dtors          :
+  {
+    KEEP (*crtbegin.o(.dtors))
+    KEEP (*crtbegin?.o(.dtors))
+    KEEP (*(EXCLUDE_FILE (*crtend.o *crtend?.o ) .dtors))
+    KEEP (*(SORT(.dtors.*)))
+    KEEP (*(.dtors))
+  } >isram AT>isram 
+
+    . = ALIGN(4);
+    PROVIDE( _eisram = . );
+
+  .lalign         :
+  {
+    . = ALIGN(4);
+    PROVIDE( _data_lma = . );
+  } >isram AT>isram 
+
+  .dalign         :
+  {
+    . = ALIGN(4);
+    PROVIDE( _data = . );
+  } >dsram AT>isram 
+
+  .data          :
+  {
+    *(.rdata)
+    *(.rodata .rodata.*)
+    rodata_end = .;
+    *(.gnu.linkonce.r.*)
+    *(.data .data.*)
+    *(.gnu.linkonce.d.*)
+    . = ALIGN(8);
+    PROVIDE( __global_pointer$ = . + 0x800 );
+    *(.sdata .sdata.*)
+    *(.gnu.linkonce.s.*)
+    . = ALIGN(8);
+    *(.srodata.cst16)
+    *(.srodata.cst8)
+    *(.srodata.cst4)
+    *(.srodata.cst2)
+    *(.srodata .srodata.*)
+  } >dsram AT>isram 
+
+  . = ALIGN(4);
+  PROVIDE( _edata = . );
+  PROVIDE( edata = . );
+
+  PROVIDE( _fbss = . );
+  PROVIDE( __bss_start = . );
+  .bss            :
+  {
+    *(.sbss*)
+    *(.gnu.linkonce.sb.*)
+    *(.bss .bss.*)
+    *(.gnu.linkonce.b.*)
+    *(COMMON)
+    . = ALIGN(4);
+  } >dsram AT>dsram 
+
   . = ALIGN(8);
-  _end = . ;
-  PROVIDE (end = .);
+  PROVIDE( _end = . );
+  PROVIDE( end = . );
 
-   . = ALIGN(32);
-
-  .bigdata : { *(.bigdata) }
-
-   . = ALIGN(256);
-  _heap = . ;
-  /* These are needed for ELF backends which have not yet been
-     converted to the new style linker.  */
-  .stab 0 : { *(.stab) }
-  .stabstr 0 : { *(.stabstr) }
-  /* DWARF debug sections.
-     Symbols in the .debug DWARF section are relative to the beginning of the
-     section so we begin .debug at 0.  It's not clear yet what needs to happen
-     for the others.   */
-  .debug          0 : { *(.debug) }
-  .debug_srcinfo  0 : { *(.debug_srcinfo) }
-  .debug_aranges  0 : { *(.debug_aranges) }
-  .debug_pubnames 0 : { *(.debug_pubnames) }
-  .debug_sfnames  0 : { *(.debug_sfnames) }
-  .line           0 : { *(.line) }
-  /* These must appear regardless of  .  */
-  .gptab.sdata : { *(.gptab.data) *(.gptab.sdata) }
-  .gptab.sbss : { *(.gptab.bss) *(.gptab.sbss) }
+  .stack ORIGIN(dsram) + LENGTH(dsram) - __stack_size :
+  {
+    PROVIDE( _heap_end = . );
+    . = __stack_size - 4;
+    PROVIDE( _stack = . );
+  } >dsram AT>dsram 
 }

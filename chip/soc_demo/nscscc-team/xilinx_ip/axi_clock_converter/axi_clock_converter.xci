@@ -4,7 +4,7 @@
     "xci_name": "axi_clock_converter",
     "component_reference": "xilinx.com:ip:axi_clock_converter:2.1",
     "ip_revision": "28",
-    "gen_directory": ".",
+    "gen_directory": "gen",
     "parameters": {
       "component_parameters": {
         "PROTOCOL": [ { "value": "AXI3", "value_src": "user", "resolve_type": "user", "usage": "all" } ],
@@ -60,7 +60,7 @@
         "IPCONTEXT": [ { "value": "IP_Flow" } ],
         "IPREVISION": [ { "value": "28" } ],
         "MANAGED": [ { "value": "TRUE" } ],
-        "OUTPUTDIR": [ { "value": "." } ],
+        "OUTPUTDIR": [ { "value": "gen" } ],
         "SELECTEDSIMMODEL": [ { "value": "" } ],
         "SHAREDDIR": [ { "value": "." } ],
         "SWVERSION": [ { "value": "2023.2" } ],

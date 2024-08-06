@@ -9,6 +9,7 @@ typedef unsigned long clock_t;
 #define USEC_PER_SEC 1000000L
 #define NSEC_PER_SEC 1000000000L
 #define FSEC_PER_SEC 1000000000000000LL
+#define CLOCKS_PER_SEC 1000000L
 
 struct tms{
 	_clock_t tms_utime;

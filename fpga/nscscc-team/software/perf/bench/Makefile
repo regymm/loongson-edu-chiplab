@@ -9,3 +9,13 @@ clean:
 	make -C bubble_sort clean
 	make -C select_sort clean
 	make -C stream_copy clean
+	make -C fireye_A0 clean
+	make -C fireye_B2 clean
+	make -C fireye_C0 clean
+	make -C fireye_D1 clean
+	make -C fireye_I2 clean
+	make -C inner_product clean
+	make -C lookup_table clean
+	make -C loop_induction clean
+	make -C my_memcmp clean
+	make -C minmax_sequence clean

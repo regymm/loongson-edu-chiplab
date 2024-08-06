@@ -200,4 +200,25 @@ begin
 	    $finish;
 	end
 end
+
+integer software_bin;
+integer err,str;
+reg [31:0] instr;
+integer i;
+initial begin
+    software_bin = $fopen("inst_data.bin","rb");
+    err = $ferror(software_bin, str);
+    if(!err) begin
+        for(i=0;i<262144;i=i+1) begin
+            if ($fread(instr,software_bin))begin
+                soc_lite.u_axi_ram.u_fpga_sram.BRAM[i] <= {instr[7:0],instr[15:8],instr[23:16],instr[31:24]};
+            end
+            else begin
+                soc_lite.u_axi_ram.u_fpga_sram.BRAM[i] <= 32'b0;
+            end
+        end
+    end
+    $fclose(software_bin);
+end
+
 endmodule

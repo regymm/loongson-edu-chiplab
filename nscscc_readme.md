@@ -10,7 +10,7 @@ Chiplab支持龙芯杯团体赛的功能测试与性能测试，有关Chiplab的
 │　　　　　　　　├── axi_wrap&emsp;&emsp;&emsp;&emsp;&emsp;&ensp;<font color='red'>cpu axi 接口包装一层，使仿真和上板 axi 访问行为一致。</font>   
 │　　　　　　　　├── CONFREG&emsp;&emsp;&emsp;&emsp;&emsp;<font color='red'>confreg 模块，连接 CPU 与开发板上数码管、拨码开关等 GPIO 类设备。</font>   
 │　　　　　　　　├── ram_wrap&emsp;&emsp;&emsp;&emsp;&emsp;<font color='red'>axi ram 的封装层，增加固定延迟设置。</font>   
-│　　　　　　　　├── xilinx_ip&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;<font color='red'>Xilinx IP，包含 clk_pll、axi_ram、axi_crossbar_1x2。</font>  
+│　　　　　　　　├── xilinx_ip&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;<font color='red'>Xilinx IP，包含 clk_pll、axi_crossbar_2x3。</font>  
 │　　　　　　　　├── soc_axi_lite_top.v&emsp;&emsp;<font color='red'>SoC_lite 的顶层。</font>  
 │　　　　　　　　├── soc_config.vh&emsp;&emsp;&emsp;&ensp;<font color='red'>配置SoC为功能测试或性能测试的头文件。</font>  
 │　　　　　├── loongson&emsp;&emsp;&emsp;&ensp;龙芯实验箱SoC顶层代码。   
@@ -152,11 +152,11 @@ module core_top(
     output          bready,
 
     //debug
-    input           break_point,//无需实现，仅提供接口即可，输入1’b0
-    input           infor_flag,//无需实现，仅提供接口即可，输入1’b0
-    input  [ 4:0]   reg_num,//无需实现，仅提供接口即可，输入5’b0
-    output          ws_valid,//无需实现，仅提供接口即可
-    output [31:0]   rf_rdata,//无需实现，仅提供接口即可
+    input           break_point,//无需实现功能，仅提供接口即可，输入1’b0
+    input           infor_flag,//无需实现功能，仅提供接口即可，输入1’b0
+    input  [ 4:0]   reg_num,//无需实现功能，仅提供接口即可，输入5’b0
+    output          ws_valid,//无需实现功能，仅提供接口即可
+    output [31:0]   rf_rdata,//无需实现功能，仅提供接口即可
 
     //debug info
     output [31:0] debug0_wb_pc,
@@ -176,32 +176,40 @@ module core_top(
 
 1）【myCPU加入】首先确保已经替换`IP/myCPU`中的处理器核代码
 
-2）【编译software】发布包默认提供编译好的obj，若重新编译请执行下列命令
+2）【编译software】发布包默认提供编译好的obj。
+
+特别注意：性能测试发布包中默认发布的obj为无chache版本，若实现了cache和cacop指令，需要将`chiplab/fpga/nscscc-team/software/perf/Makefile`文件的第二行改为`AFLAGS+=-Dhas_cache=1`。之后重新编译性能测试：
+
+```
+cd $CHIPLAB_HOME/fpga/nscscc-team/software/perf #进入性能测试目录
+make clean                                      #清除已有编译结果
+make                                            #执行性能测试编译
+```
+
+重新编译功能测试请执行下列命令
 
 ```
 cd $CHIPLAB_HOME/fpga/nscscc-team/software/func #进入功能测试目录
 make clean                                      #清除已有编译结果
 make                                            #执行功能测试编译
-cd $CHIPLAB_HOME/fpga/nscscc-team/software/perf #进入性能测试目录
-make clean                                      #清除已有编译结果
-make                                            #执行性能测试编译
 ```
+
 完成编译后，在fpga/nscscc-team/software/func/obj目录下可以看到功能测试的编译结果
 
 | 文件名     | 解释     |
 | -------- | -------- |
 | main.elf | 生成的可执行文件，属于中间文件 |
 | rom.vlog | verilator仿真所需的内存初始化文件 |
-| main.bin | 由main.elf生成的二进制文件，包含代码、数据段，可以不用关注 |
+| main.bin | 由main.elf生成的二进制文件，包含代码、数据段，用于 vivado 前仿和上板下载 |
 | test.s   | 对 main.elf 反汇编得到的文件，可根据其中的PC和指令码用于调试 |
-| inst_ram.mif | Vivado前仿所需的内存初始化（Memory Initialization File）文件 |
-| inst_ram.coe | 重新定制vivado ip核 axi ram 所需的 coe 文件，用与综合 |
+| inst_ram.mif | Memory Initialization File 文件 |
+| inst_ram.coe | 重新定制vivado ip核 axi ram 所需的 coe 文件 |
 
 在fpga/nscscc-team/software/perf/obj的各子目录存放性能测试的编译结果
 
 | 子目录     | 解释     |
 | -------- | -------- |
-| allbench | 联合编译结果。包含 10 个测试程序的源码，用于综合实
+| allbench | 联合编译结果。包含 20 个测试程序的源码，用于综合实
 现并上板。 |
 | bitcount | 独立编译结果。仅包含 bitcount 测试程序。 |
 | bubble_sort | 独立编译结果。仅包含 bubble_sort 测试程序。 |
@@ -213,16 +221,26 @@ make                                            #执行性能测试编译
 | sha | 独立编译结果。仅包含 sha 测试程序。 |
 | stream_copy | 独立编译结果。仅包含 stream_copy 测试程序。 |
 | stringsearch | 独立编译结果。仅包含 stringsearch 测试程序。 |
+| fireye_A0 | 独立编译结果。仅包含 fireye_A0 测试程序。 |
+| fireye_B2 | 独立编译结果。仅包含 fireye_B2 测试程序。 |
+| fireye_C0 | 独立编译结果。仅包含 fireye_C0 测试程序。 |
+| fireye_D1 | 独立编译结果。仅包含 fireye_D1 测试程序。 |
+| fireye_I2 | 独立编译结果。仅包含 fireye_I2 测试程序。 |
+| inner_product | 独立编译结果。仅包含 inner_product 测试程序。 |
+| lookup_table | 独立编译结果。仅包含 lookup_table 测试程序。 |
+| loop_induction | 独立编译结果。仅包含 loop_induction 测试程序。 |
+| my_memcmp | 独立编译结果。仅包含 my_memcmp 测试程序。 |
+| minmax_sequence | 独立编译结果。仅包含 minmax_sequence 测试程序。 |
 
 各子目录中具体编译得到的文件如下：
 
 | 文件名     | 解释     |
 | -------- | -------- |
 | main.elf | 生成的可执行文件，属于中间文件 |
-| inst_data.bin | 由main.elf生成的二进制文件，包含代码、数据段，可以不用关注 |
+| inst_data.bin | 由main.elf生成的二进制文件，包含代码、数据段，用于 vivado 前仿和上板下载 |
 | test.s   | 对 main.elf 反汇编得到的文件，可根据其中的PC和指令码用于调试 |
-| axi_ram.mif | Vivado前仿所需的内存初始化（Memory Initialization File）文件 |
-| axi_ram.coe | 重新定制vivado ip核 axi ram 所需的 coe 文件，用与综合 |
+| axi_ram.mif | Memory Initialization File 文件 |
+| axi_ram.coe | 重新定制vivado ip核 axi ram 所需的 coe 文件 |
 
 3）【创建Vivado工程】打开Vivado，在下方的控制台Tcl Console中，首先切换目录至`fpga/nscscc-team/run_vivado`，再调用create_project.tcl脚本。具体命令如下：
 
@@ -258,12 +276,12 @@ source ../run_func_test.tcl
 
 ```
 cd [get_property DIRECTORY [current_project]]
-file copy -force ../../software/perf/obj/stream_copy/axi_ram.mif ./loongson.sim/sim_1/behav/xsim/axi_ram.mif
+file copy -force ../../software/perf/obj/stream_copy/inst_data.bin ./loongson.sim/sim_1/behav/xsim/inst_data.bin
 restart
 run all
 ```
 
-例子中给出的是执行用时较短的stream_copy测试用例，执行其它性能测试用例，修改该字段即可。
+例子中给出的是执行用时较短的 stream_copy 测试用例，执行其它性能测试用例，修改该字段即可。
 
 如果性能仿真正确运行，在控制台Tcl Console里可以看到类似如下打印信息
 ```
@@ -284,11 +302,31 @@ source ../run_allbench.tcl
 ### 4.3 基于Vivado进行综合实现
 
 #### 4.3.1 功能测试上板验证
-1）首先修改 `chiplab/chip/soc_demo/nscscc-team/soc_config.vh`头文件，打开 `RUN_FUNC_TEST`宏，关闭`RUN_PERF_TEST`宏。
+1）功能/性能测试宏修改
 
-2）在vivado工程中双击 axi_ram，重新定制，在 `IP 定制界面->Other Options->Memory Initialization`选择`chiplab/fpga/nscscc-team/software/func/obj/inst_ram.coe`，点击“OK”确认。这样就可以更新 axi ram 里的程序为功能测试。之后就可进行综合、实现、bit生成。
+首先修改 `chiplab/chip/soc_demo/nscscc-team/soc_config.vh`头文件，打开 `RUN_FUNC_TEST`宏，关闭`RUN_PERF_TEST`宏。之后进行综合、实现、bit生成。
 
-3）下载bit文件，查看实验现象。
+2）下载bit文件
+
+3）通过UART下载bin文件
+
+UART下载功能移植自[tinyriscv](https://gitee.com/liangkangnan/tinyriscv/)，修改了axi总线支持。
+
+使用脚本：`chiplab/fpga/nscscc-team/software/uart_downloader.py`进行下载，在`chiplab/fpga/nscscc-team/software`目录下执行下载命令：
+
+`python .\uart_downloader.py 串口号 bin文件`
+
+例如
+
+`python .\uart_downloader.py COM3 D:\chiplab\fpga\nscscc-team\software\func\obj\main.bin`
+
+bin文件下载完成后会自动复位处理器核，即可看到实验现象。若执行完成当前测试希望进行下一个测试，直接运行新测试bin的下载命令即可。
+
+另外该脚本支持复位命令，发送后对处理器核与confreg进行复位
+
+`python .\uart_downloader.py 串口号 reset`
+
+1) 观察实验现象
 在FPGA上板验证时其结果正确与否的判断只有一种方法，func正确的执行行为是：
 
 1.开始，单色LED全灭，双色LED灯一红一绿，数码管显示全0；
@@ -302,27 +340,48 @@ source ../run_allbench.tcl
 另外，可通过修改拨码开关switch值调整程序执行速度，从而看到完整的数码管数字递增。
 
 #### 4.3.2 性能测试上板验证
-1）首先修改 `chiplab/chip/soc_demo/nscscc-team/soc_config.vh`头文件，打开 `RUN_PERF_TEST`宏，关闭`RUN_FUNC_TEST`宏，关闭`RUN_PERF_NO_DELAY`宏。
+1）功能/性能测试宏修改
 
-2）在vivado工程中双击 axi_ram，重新定制，在 `IP 定制界面->Other Options->Memory Initialization`选择`chiplab/fpga/nscscc-team/software/perf/obj/allbench/axi_ram.coe`，点击“OK”确认。这样就可以更新 axi ram 里的程序为性能测试。之后就可进行综合、实现、bit生成。
+首先修改 `chiplab/chip/soc_demo/nscscc-team/soc_config.vh`头文件，打开 `RUN_PERF_TEST`宏，关闭`RUN_FUNC_TEST`宏，关闭`RUN_PERF_NO_DELAY`宏。之后进行综合、实现、bit生成。
 
-3）下载bit文件，查看实验现象。
+2）下载bit文件
 
-下载 bit 文件后，在实验板上使用 8 个拨码开关的右侧 4 个选择运行哪个测试，随后按复位键，开始运行由拨码开关指定的测试，数码管会显示当次运行所花费的 count 数。约定拨码开关拨上为 1，拨下为 0，则
-4 个拨码开关与性能测试程序的对应关系如下表。
+3）通过UART下载bin文件
+
+可以下载单个性能测试bin文件，如：
+
+`python .\uart_downloader.py COM3 D:\chiplab\fpga\nscscc-team\software\perf\obj\bitcount\inst_data.bin`
+
+下载完成后自动复位执行，如果性能测试上板正确运行，双色 LED 灯全变为绿色，16 个单色 LED 全灭。如果性能测试的功能错误，双色 LED 灯会变成一绿一红，16 个单色 LED 灯全亮。无论功能是否正确都会在数码管上显示计数周期。
+
+也可以下载allbench的性能测试bin文件，通过拨码开关确定进行的测试程序，如：
+
+`python .\uart_downloader.py COM3 D:\chiplab\fpga\nscscc-team\software\perf\obj\allbench\inst_data.bin`
+
+下载 allbench 的 bin 文件后，在实验板上使用 8 个拨码开关的右侧 4 个选择运行哪个测试，随后按复位键，开始运行由拨码开关指定的测试。约定拨码开关拨上为 1，拨下为 0，则 4 个拨码开关与性能测试程序的对应关系如下表。
 
 | 序号     | 运行的测试程序     | 拨码开关状态     |
 | -------- | -------- | -------- |
-| 1 | bitcount | 4'b0001 |
-| 2 | bubble_sort | 4'b0010 |
-| 3 | coremark | 4'b0011 |
-| 4 | crc32 | 4'b0100 |
-| 5 | dhrystone | 4'b0101 |
-| 6 | quick_sort | 4'b0110 |
-| 7 | select_sort | 4'b0111 |
-| 8 | sha | 4'b1000 |
-| 9 | stream_copy | 4'b1001 |
-| 10| stringsearch | 4'b1010 |
+| 1 | bitcount | 5'b0_0001 |
+| 2 | bubble_sort | 5'b0_0010 |
+| 3 | coremark | 5'b0_0011 |
+| 4 | crc32 | 5'b0_0100 |
+| 5 | dhrystone | 5'b0_0101 |
+| 6 | quick_sort | 5'b0_0110 |
+| 7 | select_sort | 5'b0_0111 |
+| 8 | sha | 5'b0_1000 |
+| 9 | stream_copy | 5'b0_1001 |
+| 10| stringsearch | 5'b0_1010 |
+| 11| fireye_A0 | 5'b0_1011 |
+| 12| fireye_B2 | 5'b0_1100 |
+| 13| fireye_C0 | 5'b0_1101 |
+| 14| fireye_D1 | 5'b0_1110 |
+| 15| fireye_I2 | 5'b0_1111 |
+| 16| inner_product | 5'b1_0000 |
+| 17| lookup_table | 5'b1_0001 |
+| 18| loop_induction | 5'b1_0010 |
+| 19| my_memcmp | 5'b1_0011 |
+| 20| minmax_sequence | 5'b1_0100 |
 | 其它| 不运行性能测试 | 其它 |
 
 #### 4.3.3 CPU 频率调整

@@ -8,7 +8,8 @@
 #include <machine.h>
 
 
-
+	.section .init
+	.type _start,@function
 
 	.globl	_start
 	.globl	start
@@ -35,6 +36,46 @@ start:
     li.w $r25, 0xbfaf8ffc
     st.w $r0, $r25, 0
 
+#if has_cache==1
+    # invalid the old inst in icache and old data in dcache by index
+    li.w t0,0x0
+    li.w t2,0x100
+1: 
+    slli.w    t1, t0, 0x4
+    cacop     0x00, t1, 0x0 
+    cacop     0x00, t1, 0x1
+    cacop     0x01, t1, 0x0
+    cacop     0x01, t1, 0x1
+    addi.w    t0, t0, 0x1
+    bne       t0, t2, 1b
+#else
+    /* disable   cache */
+    li.w    $r12,0x1
+    csrwr	$r12,0x101
+#endif
+
+    /* Load data section */
+	la.local t0, _data_lma
+	la.local t1, _data
+	la.local t2, _edata
+	bgeu t1, t2, 2f
+1:
+	ld.w t3, t0, 0
+	st.w t3, t1, 0
+	addi.w t0, t0, 4
+	addi.w t1, t1, 4
+	bltu t1, t2, 1b
+2:
+
+	/* Clear bss section */
+	la.local t0, __bss_start
+	la.local t1, _end
+	bgeu t0, t1, 2f
+1:
+	st.w $r0, t0, 0
+	addi.w t0, t0, 4
+	bltu t0, t1, 1b
+2:
 
     csrwr	$r0,0x180
     csrwr	$r0,0x181
@@ -52,9 +93,7 @@ start:
     ori	    $r12,$r12,0x380
     csrwr	$r12,0xc
 
-
-	la	sp, _stack
-
+	la.local	sp, _stack
     
     b run_test    #####          
 
@@ -132,11 +171,41 @@ run_test:
 #elif CMP_FUNC==10
 	bl	shell10
 	nop
+#elif CMP_FUNC==11
+	bl	shell11
+	nop
+#elif CMP_FUNC==12
+	bl	shell12
+	nop
+#elif CMP_FUNC==13
+	bl	shell13
+	nop
+#elif CMP_FUNC==14
+	bl	shell14
+	nop
+#elif CMP_FUNC==15
+	bl	shell15
+	nop
+#elif CMP_FUNC==16
+	bl	shell16
+	nop
+#elif CMP_FUNC==17
+	bl	shell17
+	nop
+#elif CMP_FUNC==18
+	bl	shell18
+	nop
+#elif CMP_FUNC==19
+	bl	shell19
+	nop
+#elif CMP_FUNC==20
+	bl	shell20
+	nop
 #else
     li.w t0, SWITCH_ADDR
     ld.w t0, t0, 0
-    andi t0, t0, 0xf #swith, up:0, down:1
-    xori t0, t0, 0xf
+    andi t0, t0, 0x1f #swith, up:0, down:1
+    xori t0, t0, 0x1f
 1:
     li.w t1, 0x1
     bne t0, t1, 2f
@@ -215,7 +284,87 @@ run_test:
 	nop
     bl shell10
     nop
+    b go_finish
+    nop
 11:
+    li.w t1, 0xb
+    bne t0, t1, 12f
+	nop
+    bl shell11
+    nop
+    b go_finish
+    nop
+12:
+    li.w t1, 0xc
+    bne t0, t1, 13f
+	nop
+    bl shell12
+    nop
+    b go_finish
+    nop
+13:
+    li.w t1, 0xd
+    bne t0, t1, 14f
+	nop
+    bl shell13
+    nop
+    b go_finish
+    nop
+14:
+    li.w t1, 0xe
+    bne t0, t1, 15f
+	nop
+    bl shell14
+    nop
+    b go_finish
+    nop
+15:
+    li.w t1, 0xf
+    bne t0, t1, 16f
+	nop
+    bl shell15
+    nop
+    b go_finish
+    nop
+16:
+    li.w t1, 0x10
+    bne t0, t1, 17f
+	nop
+    bl shell16
+    nop
+    b go_finish
+    nop
+17:
+    li.w t1, 0x11
+    bne t0, t1, 18f
+	nop
+    bl shell17
+    nop
+    b go_finish
+    nop
+18:
+    li.w t1, 0x12
+    bne t0, t1, 19f
+	nop
+    bl shell18
+    nop
+    b go_finish
+    nop
+19:
+    li.w t1, 0x13
+    bne t0, t1, 20f
+	nop
+    bl shell19
+    nop
+    b go_finish
+    nop
+20:
+    li.w t1, 0x14
+    bne t0, t1, 21f
+	nop
+    bl shell20
+    nop
+21:
     b go_finish
     nop
 #endif

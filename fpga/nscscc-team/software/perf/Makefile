@@ -1,8 +1,7 @@
-#export LD_PRELOAD =
+AFLAGS = -O2 -fno-pic -fno-builtin -I include
+AFLAGS+=-Dhas_cache=0
 
 MEM_DEF= -DMEMSTART=0x10000000 -DMEMSIZE=0x10000
-
-AFLAGS = -O2 -fno-pic -fno-builtin -I include
 
 export CROSS_COMPILE ?= loongarch32r-linux-gnusf-
 export MEM_DEF
@@ -18,6 +17,16 @@ ALLBENCH.a += bench/select_sort/select_sort.a
 ALLBENCH.a += bench/sha/sha.a
 ALLBENCH.a += bench/stream_copy/stream_copy.a
 ALLBENCH.a += bench/stringsearch/stringsearch.a
+ALLBENCH.a += bench/fireye_A0/fireye_A0.a
+ALLBENCH.a += bench/fireye_B2/fireye_B2.a
+ALLBENCH.a += bench/fireye_C0/fireye_C0.a
+ALLBENCH.a += bench/fireye_D1/fireye_D1.a
+ALLBENCH.a += bench/fireye_I2/fireye_I2.a
+ALLBENCH.a += bench/inner_product/inner_product.a
+ALLBENCH.a += bench/lookup_table/lookup_table.a
+ALLBENCH.a += bench/loop_induction/loop_induction.a
+ALLBENCH.a += bench/my_memcmp/my_memcmp.a
+ALLBENCH.a += bench/minmax_sequence/minmax_sequence.a
 
 all: 
 	make bitcount
@@ -30,6 +39,16 @@ all:
 	make sha
 	make stream_copy
 	make stringsearch
+	make fireye_A0
+	make fireye_B2
+	make fireye_C0
+	make fireye_D1
+	make fireye_I2
+	make inner_product
+	make lookup_table
+	make loop_induction
+	make my_memcmp
+	make minmax_sequence
 	make allbench
 
 
@@ -48,41 +67,109 @@ bubble_sort: start.o
 coremark: AFLAGS+=-DCMP_FUNC=3
 coremark: start.o
 	$(eval export BENCH = $@)
+	@echo $(AFLAGS)
 	make target_bench
 
 crc32: AFLAGS+=-DCMP_FUNC=4
 crc32: start.o
 	$(eval export BENCH = $@)
+	@echo $(AFLAGS)
 	make target_bench
 
 dhrystone: AFLAGS+=-DCMP_FUNC=5
 dhrystone: start.o
 	$(eval export BENCH = $@)
+	@echo $(AFLAGS)
 	make target_bench
 
 quick_sort: AFLAGS+=-DCMP_FUNC=6
 quick_sort: start.o
 	$(eval export BENCH = $@)
+	@echo $(AFLAGS)
 	make target_bench
 
 select_sort: AFLAGS+=-DCMP_FUNC=7
 select_sort: start.o
 	$(eval export BENCH = $@)
+	@echo $(AFLAGS)
 	make target_bench
 
 sha: AFLAGS+=-DCMP_FUNC=8
 sha: start.o
 	$(eval export BENCH = $@)
+	@echo $(AFLAGS)
 	make target_bench
 
 stream_copy: AFLAGS+=-DCMP_FUNC=9
 stream_copy: start.o
 	$(eval export BENCH = $@)
+	@echo $(AFLAGS)
 	make target_bench
 
 stringsearch: AFLAGS+=-DCMP_FUNC=10
 stringsearch: start.o
 	$(eval export BENCH = $@)
+	@echo $(AFLAGS)
+	make target_bench
+
+fireye_A0: AFLAGS+=-DCMP_FUNC=11
+fireye_A0: start.o
+	$(eval export BENCH = $@)
+	@echo $(AFLAGS)
+	make target_bench
+
+fireye_B2: AFLAGS+=-DCMP_FUNC=12
+fireye_B2: start.o
+	$(eval export BENCH = $@)
+	@echo $(AFLAGS)
+	make target_bench
+
+fireye_C0: AFLAGS+=-DCMP_FUNC=13
+fireye_C0: start.o
+	$(eval export BENCH = $@)
+	@echo $(AFLAGS)
+	make target_bench
+
+fireye_D1: AFLAGS+=-DCMP_FUNC=14
+fireye_D1: start.o
+	$(eval export BENCH = $@)
+	@echo $(AFLAGS)
+	make target_bench
+
+fireye_I2: AFLAGS+=-DCMP_FUNC=15
+fireye_I2: start.o
+	$(eval export BENCH = $@)
+	@echo $(AFLAGS)
+	make target_bench
+
+inner_product: AFLAGS+=-DCMP_FUNC=16
+inner_product: start.o
+	$(eval export BENCH = $@)
+	@echo $(AFLAGS)
+	make target_bench
+
+lookup_table: AFLAGS+=-DCMP_FUNC=17
+lookup_table: start.o
+	$(eval export BENCH = $@)
+	@echo $(AFLAGS)
+	make target_bench
+
+loop_induction: AFLAGS+=-DCMP_FUNC=18
+loop_induction: start.o
+	$(eval export BENCH = $@)
+	@echo $(AFLAGS)
+	make target_bench
+
+my_memcmp: AFLAGS+=-DCMP_FUNC=19
+my_memcmp: start.o
+	$(eval export BENCH = $@)
+	@echo $(AFLAGS)
+	make target_bench
+
+minmax_sequence: AFLAGS+=-DCMP_FUNC=20
+minmax_sequence: start.o
+	$(eval export BENCH = $@)
+	@echo $(AFLAGS)
 	make target_bench
 
 allbench: AFLAGS+=-DCMP_FUNC=0
@@ -99,6 +186,16 @@ allbench: start.o
 	make -C bench/sha
 	make -C bench/stream_copy
 	make -C bench/stringsearch
+	make -C bench/fireye_A0
+	make -C bench/fireye_B2
+	make -C bench/fireye_C0
+	make -C bench/fireye_D1
+	make -C bench/fireye_I2
+	make -C bench/inner_product
+	make -C bench/lookup_table
+	make -C bench/loop_induction
+	make -C bench/my_memcmp
+	make -C bench/minmax_sequence
 	mkdir -p $(OBJDIR)/allbench
 	make generate
 
@@ -117,14 +214,14 @@ generate: inst_data.bin convert
 	rm start.o
 
 inst_data.bin: main.elf
-	${CROSS_COMPILE}objcopy -O binary -j .text -j .data  $(OBJDIR)/$(BENCH_DIR)/$< $(OBJDIR)/$(BENCH_DIR)/$@ 
+	${CROSS_COMPILE}objcopy -O binary $(OBJDIR)/$(BENCH_DIR)/$< $(OBJDIR)/$(BENCH_DIR)/$@ 
 
 #main.data: main.elf
 #	${CROSS_COMPILE}objcopy -O binary -j .data $(OBJDIR)/$(BENCH_DIR)/$< $(OBJDIR)/$(BENCH_DIR)/$@ 
 
 main.elf: start.o libtinyc.a bin.lds
 	${CROSS_COMPILE}ld -g -T bin.lds start.o $(BENCH_LIB) lib/libtinyc.a -o $(OBJDIR)/$(BENCH_DIR)/$@
-	${CROSS_COMPILE}objdump -alD $(OBJDIR)/$(BENCH_DIR)/$@ > $(OBJDIR)/$(BENCH_DIR)/test.s
+	${CROSS_COMPILE}objdump -alD -S $(OBJDIR)/$(BENCH_DIR)/$@ > $(OBJDIR)/$(BENCH_DIR)/test.s
 
 
 bin.lds: bin.lds.S
@@ -136,7 +233,7 @@ start.o: start.S
 convert: convert.c
 	gcc -o convert convert.c
 clean:
-	rm -f *.o *.bin *.elf *.a testbin *.s *.vlog *.coe *.data *.mif
+	rm -f *.o *.bin *.elf *.a testbin *.s *.vlog *.coe *.data *.mif bin.lds
 	rm -rf obj
 	make -C lib clean
 	make -C bench clean

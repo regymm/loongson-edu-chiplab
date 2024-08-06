@@ -2,7 +2,11 @@
 #define __MACHINE_H_
 
 //loop times when run in FPGA
+//TODO: LOOPTIMES_fireye_A0 只能是1
+//TODO: LOOPTIMES_fireye_C0 只能是1 2 3 4
 #define LOOPTIMES 10
+#define LOOPTIMES_fireye_A0 1
+#define LOOPTIMES_fireye_C0 4
 
 
 //soc confreg

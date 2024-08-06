@@ -1,4 +1,4 @@
-CFLAGS = -O3  -funroll-all-loops -falign-jumps=16 -falign-functions=16 -fgcse-sm -fgcse-las -finline-functions -finline-limit=1000 -msoft-float 
+CFLAGS = -O3 -funroll-all-loops -falign-jumps=16 -falign-functions=16 -fgcse-sm -fgcse-las -finline-functions -finline-limit=1000 -msoft-float 
 CFLAGS += -G8 -DTIME
 CFLAGS += -I . -I ../../include -include stdio.h
 

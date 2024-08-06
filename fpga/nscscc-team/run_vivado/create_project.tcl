@@ -2,6 +2,7 @@ create_project -force loongson ./project -part xc7a200tfbg676-1
 
 # Add conventional sources
 add_files -scan_for_includes ../../../chip/soc_demo/nscscc-team
+add_files -scan_for_includes ../../../IP/AXI_SRAM_BRIDGE
 
 # Add IPs
 add_files -quiet [glob -nocomplain ../../../chip/soc_demo/nscscc-team/xilinx_ip/*/*.xci]

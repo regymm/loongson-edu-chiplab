@@ -5,7 +5,7 @@ CFLAGS += $(MEM_DEF)
 
 .SUFFIXES: .o64 .elf64 .bin64
 
-objs= malloc.o stdio.o printf.o putchar.o puts.o printhex.o  printbase.o memcmp.o strcat.o strchr.o strcmp.o strtok.o strspn.o strcspn.o getchar.o strtoupp.o toupper.o string.o strcpy.o strichr.o strncmp.o strncpy.o strtoul.o time.o sscanf.o
+objs= malloc.o stdio.o printf.o putchar.o puts.o printhex.o  printbase.o strcat.o strchr.o strcmp.o strtok.o strspn.o strcspn.o getchar.o strtoupp.o toupper.o string.o strcpy.o strichr.o strncmp.o strncpy.o strtoul.o time.o sscanf.o rand.o
 
 objs64=$(objs:.o=.o64)
 

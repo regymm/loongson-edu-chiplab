@@ -172,13 +172,17 @@ module core_top(
 
 具体使用方法请参考[verilator仿真环境说明](https://chiplab.readthedocs.io/zh/latest/Simulation/verilator.html)。
 
+需要注意的是，在运行func测试时，需根据处理器核情况更改`chiplab/software/func/func_src/Makefile`中第四行`CACHEFLAGS = -Dhas_cache=0`，为0时，start.s 不使用 cacop指令。
+
 ### 4.2 基于Vivado进行功能测试和性能测试的前仿真
 
 1）【myCPU加入】首先确保已经替换`IP/myCPU`中的处理器核代码
 
 2）【编译software】发布包默认提供编译好的obj。
 
-特别注意：性能测试发布包中默认发布的obj为无chache版本，若实现了cache和cacop指令，需要将`chiplab/fpga/nscscc-team/software/perf/Makefile`文件的第二行改为`AFLAGS+=-Dhas_cache=1`。之后重新编译性能测试：
+特别注意：功能测试和性能测试发布包中默认提供的obj为无chache版本，若实现了cache和cacop指令，需要将`chiplab/fpga/nscscc-team/software/perf/Makefile`文件的第二行改为`AFLAGS+=-Dhas_cache=1`。将`chiplab/fpga/nscscc-team/software/func/Makefile`文件的第七行改为`CACHEFLAGS = -Dvivado -Dhas_cache=1`。该宏置为1后会使用cacop指令在每次复位后执行cache初始化。
+
+之后重新编译性能测试：
 
 ```
 cd $CHIPLAB_HOME/fpga/nscscc-team/software/perf #进入性能测试目录
@@ -186,7 +190,7 @@ make clean                                      #清除已有编译结果
 make                                            #执行性能测试编译
 ```
 
-重新编译功能测试请执行下列命令
+重新编译功能测试：
 
 ```
 cd $CHIPLAB_HOME/fpga/nscscc-team/software/func #进入功能测试目录
@@ -314,19 +318,35 @@ UART下载功能移植自[tinyriscv](https://gitee.com/liangkangnan/tinyriscv/)�
 
 使用脚本：`chiplab/fpga/nscscc-team/software/uart_downloader.py`进行下载，在`chiplab/fpga/nscscc-team/software`目录下执行下载命令：
 
+在Windows环境下：
+
 `python .\uart_downloader.py 串口号 bin文件`
 
 例如
 
 `python .\uart_downloader.py COM3 D:\chiplab\fpga\nscscc-team\software\func\obj\main.bin`
 
+在Linux环境下：
+
+`python3 ./uart_downloader.py 串口号 bin文件`
+
+例如
+
+`python3 ./uart_downloader.py /dev/ttyUSB0 ./func/obj/main.bin`
+
 bin文件下载完成后会自动复位处理器核，即可看到实验现象。若执行完成当前测试希望进行下一个测试，直接运行新测试bin的下载命令即可。
 
 另外该脚本支持复位命令，发送后对处理器核与confreg进行复位
 
+在Windows环境下：
+
 `python .\uart_downloader.py 串口号 reset`
 
-1) 观察实验现象
+在Linux环境下：
+
+`python3 ./uart_downloader.py 串口号 reset`
+
+4）观察实验现象
 在FPGA上板验证时其结果正确与否的判断只有一种方法，func正确的执行行为是：
 
 1.开始，单色LED全灭，双色LED灯一红一绿，数码管显示全0；
@@ -384,7 +404,34 @@ bin文件下载完成后会自动复位处理器核，即可看到实验现象�
 | 20| minmax_sequence | 5'b1_0100 |
 | 其它| 不运行性能测试 | 其它 |
 
-#### 4.3.3 CPU 频率调整
+#### 4.3.3 关于 Windows + WSL2 进行串口下载的说明
+
+如果使用 Windows + WSL2，希望从 WSL2 中进行串口下载，需要参照微软的[连接USB设备](https://learn.microsoft.com/zh-cn/windows/wsl/connect-usb)，在Windows上安装usbipd-win，并将对应的USB设备附加到WSL2中。
+
+Windows下设置需要加载的USB设备，常用命令如下：
+
+`usbipd list` 查看USB设备列表
+
+`usbipd bind --busid <busid>` 共享设备
+
+`usbipd attach --wsl --busid <busid>` 加载对应设备到WSL
+
+`usbipd detach --busid <busid>` 从Windows中断开设备
+
+`usbipd detach --busid <busid>` 从WSL2中归还设备至Windows
+
+之后在 WSL2 中，首先安装环境：
+
+```
+sudo apt install linux-tools-generic hwdata
+sudo update-alternatives --install /usr/local/bin/usbip usbip /usr/lib/linux-tools/6.8.0-39-generic/usbip 20
+```
+
+其中第二条命令中的`6.8.0-39`需要根据第一条`sudo apt install linux-tools-generic hwdata`安装的版本号进行修改
+
+之后在WSL2中查看USB设备，使用命令`lsusb`后，应能看到`Bus 001 Device 004: ID 0403:6001 Future Technology Devices International, Ltd FT232 Serial (UART) IC`，代表已经读取到USB设备。使用命令`ls /dev/ttyUSB*`查看串口号，即可使用该串口进行下载。
+
+#### 4.3.4 CPU 频率调整
 
 性能测试统计的是 myCPU 运行性能测试程序实际花费的时间，其原理是：测试换 SoC_AXI_Lite 里设置了一
 个固定 100MHz 的计时器，在运行性能测试程序的前后读取该计时器，其差值就是运行这一性能测试程序的所花费的实际时间。因而需要大家自行调整 SoC_AXI_Lite 里的 cpu_clk，使其为 myCPU 支持的最高频率，以获取最高性能分。调整 cpu_clk 的方法为：
@@ -400,7 +447,7 @@ bin文件下载完成后会自动复位处理器核，即可看到实验现象�
 
 (3) myCPU 一定是嵌入到性能测试环境 SoC_AXI_Lite 里综合实现后 WNS 非负值。如果预赛提交作品不满足该项，性能测试分记为 0 分。
 
-#### 4.3.4 综合、实现的优化参数不允许修改
+#### 4.3.5 综合、实现的优化参数不允许修改
 
 大赛统一要求：不允许自行修改综合、实现、生成 Bit 流文件时候的参数，也不允许修改约束文件 soc_lite.xdc。
 

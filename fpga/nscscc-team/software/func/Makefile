@@ -4,6 +4,7 @@ include_path = ${func_src_path}/include
 obj_path = ./obj
 inst_srcs = $(wildcard ${inst_path}/*.S)
 EXP = 16
+CACHEFLAGS = -Dhas_cache=0
 
 default: 
 	make all

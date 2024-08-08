@@ -1,6 +1,7 @@
 obj_path = ./obj
 inst_srcs = $(wildcard ./inst/*.S)
 EXP = 16
+CACHEFLAGS = -Dhas_cache=0
 
 default: 
 	make all
@@ -44,7 +45,7 @@ ${obj_path}/main.elf: bin.lds ${obj_path}/libinst.a ${obj_path}/start.o ${obj_pa
 ${obj_path}/start.s: start.S
 	@mkdir -p ${obj_path}
 	loongarch32r-linux-gnusf-gcc \
-		-Iinclude -nostdinc -nostdlib -D_KERNEL -fno-builtin -D__loongarch32\
+		-Iinclude -nostdinc -nostdlib -D_KERNEL -fno-builtin -D__loongarch32 $(CACHEFLAGS)\
 		-DMEMSTART=0x10000000 -DMEMSIZE=0x04000 -DCPU_COUNT_PER_US=1000 -DEXP=$(EXP)    \
 		-S start.S > ${obj_path}/start.s 
 ${obj_path}/init.s: init.S

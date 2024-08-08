@@ -253,7 +253,7 @@ cd $CHIPLAB_HOME/fpga/nscscc-team/run_vivado
 source create_project.tcl
 ```
 
-注意：`create_project.tcl`脚本默认所有处理器核的.v文件均在IP/myCPU目录下，处理器核用到的IP核以.xcix格式放在IP/myCPU/IP目录下。若设计的目录层次有变，请自行更改`create_project.tcl`脚本或在Vivado中手动添加设计文件与IP核。
+脚本执行完成后，再手动添加myCPU代码至工程中
 
 4）【执行Run Linter进行RTL分析】成功建立Vivado工程后可以先运行左侧的Run Linter进行语法检查。
 

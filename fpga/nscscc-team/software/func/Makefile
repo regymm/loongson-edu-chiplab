@@ -4,7 +4,7 @@ include_path = ${func_src_path}/include
 obj_path = ./obj
 inst_srcs = $(wildcard ${inst_path}/*.S)
 EXP = 16
-CACHEFLAGS = -Dhas_cache=0
+CACHEFLAGS = -Dvivado -Dhas_cache=0
 
 default: 
 	make all
@@ -50,7 +50,7 @@ ${obj_path}/main.elf: ${func_src_path}/bin.lds ${func_src_path}/obj/libinst.a ${
 ${obj_path}/start.s: ${func_src_path}/start.S
 	@mkdir -p ${obj_path}
 	loongarch32r-linux-gnusf-gcc \
-		-I${include_path} -nostdinc -nostdlib -D_KERNEL -fno-builtin -D__loongarch32\
+		-I${include_path} -nostdinc -nostdlib -D_KERNEL -fno-builtin -D__loongarch32 $(CACHEFLAGS)\
 		-DMEMSTART=0x10000000 -DMEMSIZE=0x04000 -DCPU_COUNT_PER_US=1000 -DEXP=$(EXP) -Dnscscc \
 		-S ${func_src_path}/start.S > ${obj_path}/start.s 
 ${obj_path}/init.s: ${func_src_path}/init.S

@@ -38,9 +38,11 @@ start:
     addi.w    t0, t0, 0x1
     bne       t0, t2, 1b
 #else
+    #ifdef vivado
     /* disable   cache */
-    #li.w    $r12,0x1
-    #csrwr	$r12,0x101
+    li.w    $r12,0x1
+    csrwr	$r12,0x101
+    #endif
 #endif
 
 #ifdef CSR_INIT

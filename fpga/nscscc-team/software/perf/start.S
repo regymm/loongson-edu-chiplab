@@ -16,6 +16,24 @@
 	.globl	__main
 _start:
 start:
+#if has_cache==1
+    # invalid the old inst in icache and old data in dcache by index
+    li.w t0,0x0
+    li.w t2,0x100
+1: 
+    slli.w    t1, t0, 0x4
+    cacop     0x00, t1, 0x0 
+    cacop     0x00, t1, 0x1
+    cacop     0x01, t1, 0x0
+    cacop     0x01, t1, 0x1
+    addi.w    t0, t0, 0x1
+    bne       t0, t2, 1b
+#else
+    /* disable   cache */
+    li.w    $r12,0x1
+    csrwr	$r12,0x101
+#endif
+
     csrwr	$r0,0x180
     csrwr	$r0,0x181
     ori	    $r12,$r0,0x19
@@ -61,24 +79,6 @@ start:
     li.w t0, 0xbeaf0008
     li.w t1, 0x364
     st.w t1, t0, 0
-
-#if has_cache==1
-    # invalid the old inst in icache and old data in dcache by index
-    li.w t0,0x0
-    li.w t2,0x100
-1: 
-    slli.w    t1, t0, 0x4
-    cacop     0x00, t1, 0x0 
-    cacop     0x00, t1, 0x1
-    cacop     0x01, t1, 0x0
-    cacop     0x01, t1, 0x1
-    addi.w    t0, t0, 0x1
-    bne       t0, t2, 1b
-#else
-    /* disable   cache */
-    li.w    $r12,0x1
-    csrwr	$r12,0x101
-#endif
 
     /* Load data section */
 	la.local t0, _data_lma

@@ -16,6 +16,22 @@
 	.globl	__main
 _start:
 start:
+    csrwr	$r0,0x180
+    csrwr	$r0,0x181
+    ori	    $r12,$r0,0x19
+    csrwr	$r12,0x180
+
+    li.w    $r12,0xa0000009
+    csrwr	$r12,0x181
+    ori	    $r12,$r0,0x10
+
+    ori	    $r13,$r0,0x18
+    csrxchg	$r12,$r13,0x0
+
+    lu12i.w	$r12,114688
+    ori	    $r12,$r12,0x380
+    csrwr	$r12,0xc
+    
     #disable_trace_cmp_s
     li.w $r25, 0xbfaf8ffc
     st.w $r0, $r25, 0
@@ -35,6 +51,16 @@ start:
 
     li.w $r25, 0xbfaf8ffc
     st.w $r0, $r25, 0
+
+    #init uart status
+    li.w t0, 0xbeaf0000
+    li.w t1, 0x3
+    st.w t1, t0, 0
+
+    #init uart baud
+    li.w t0, 0xbeaf0008
+    li.w t1, 0x364
+    st.w t1, t0, 0
 
 #if has_cache==1
     # invalid the old inst in icache and old data in dcache by index
@@ -76,22 +102,6 @@ start:
 	addi.w t0, t0, 4
 	bltu t0, t1, 1b
 2:
-
-    csrwr	$r0,0x180
-    csrwr	$r0,0x181
-    ori	    $r12,$r0,0x19
-    csrwr	$r12,0x180
-
-    li.w    $r12,0xa0000009
-    csrwr	$r12,0x181
-    ori	    $r12,$r0,0x10
-
-    ori	    $r13,$r0,0x18
-    csrxchg	$r12,$r13,0x0
-
-    lu12i.w	$r12,114688
-    ori	    $r12,$r12,0x380
-    csrwr	$r12,0xc
 
 	la.local	sp, _stack
     

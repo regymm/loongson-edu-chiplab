@@ -60,7 +60,8 @@ uart  u_uart (
     .clk                    ( aclk              ),
     .rst                    ( aresetn           ),
     .we_i                   ( ram_wen           ),
-    .addr_i                 ( ram_ren ? ram_raddr : ram_wen ? ram_waddr : 32'h0 ),
+    .waddr_i                ( ram_waddr         ),
+    .raddr_i                ( ram_raddr         ),
     .data_i                 ( ram_wdata         ),
     .data_o                 ( ram_rdata         ),
 

@@ -22,7 +22,8 @@ module uart(
 	input wire rst,
 
     input wire we_i,
-    input wire[31:0] addr_i,
+    input wire[31:0] waddr_i,
+    input wire[31:0] raddr_i,
     input wire[31:0] data_i,
 
     output reg[31:0] data_o,
@@ -99,7 +100,7 @@ module uart(
             tx_data_valid <= 1'b0;
         end else begin
             if (we_i == 1'b1) begin
-                case (addr_i[7:0])
+                case (waddr_i[7:0])
                     UART_CTRL: begin
                         uart_ctrl <= data_i;
                     end
@@ -137,7 +138,7 @@ module uart(
         if (rst == 1'b0) begin
             data_o = 32'h0;
         end else begin
-            case (addr_i[7:0])
+            case (raddr_i[7:0])
                 UART_CTRL: begin
                     data_o = uart_ctrl;
                 end

@@ -17,12 +17,12 @@
 // clk = 100MHz时对应的波特率115200分频系数
 `define UART_BAUD_115200        32'h364
 
-// 串口寄存器地址
-`define UART_CTRL_REG           32'h2faf0000
-`define UART_STATUS_REG         32'h2faf0004
-`define UART_BAUD_REG           32'h2faf0008
-`define UART_TX_REG             32'h2faf000c
-`define UART_RX_REG             32'h2faf0010
+// 串口寄存器物理地址
+`define UART_CTRL_REG           32'h1eaf0000
+`define UART_STATUS_REG         32'h1eaf0004
+`define UART_BAUD_REG           32'h1eaf0008
+`define UART_TX_REG             32'h1eaf000c
+`define UART_RX_REG             32'h1eaf0010
 
 `define UART_TX_BUSY_FLAG       32'h1
 `define UART_RX_OVER_FLAG       32'h2

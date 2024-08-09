@@ -14,3 +14,9 @@ void tgt_putchar(c)
         :"r"(c)
         :"$r25");
 }
+
+void uart_putchar (int c)
+{
+    while ((*((volatile uint32_t *)0xbeaf0004)) & 0x1);
+    (*((volatile uint32_t *)0xbeaf000c)) = c;
+}

@@ -71,14 +71,14 @@ start:
     st.w $r0, $r25, 0
 
     #init uart status
-    li.w t0, 0xbeaf0000
-    li.w t1, 0x3
-    st.w t1, t0, 0
+    #li.w t0, 0xbeaf0000
+    #li.w t1, 0x3
+    #st.w t1, t0, 0
 
     #init uart baud
-    li.w t0, 0xbeaf0008
-    li.w t1, 0x364
-    st.w t1, t0, 0
+    #li.w t0, 0xbeaf0008
+    #li.w t1, 0x364
+    #st.w t1, t0, 0
 
     /* Load data section */
 	la.local t0, _data_lma

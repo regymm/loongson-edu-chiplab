@@ -281,7 +281,7 @@ source ../run_func_test.tcl
 
 ```
 cd [get_property DIRECTORY [current_project]]
-file copy -force ../../software/perf/obj/stream_copy/inst_data.bin ./loongson.sim/sim_1/behav/xsim/inst_data.bin
+file copy -force ../../software/perf/obj/stream_copy/axi_ram.mif ./loongson.sim/sim_1/behav/xsim/axi_ram.mif
 restart
 run all
 ```
@@ -309,11 +309,13 @@ source ../run_allbench.tcl
 #### 4.3.1 功能测试上板验证
 1）功能/性能测试宏修改
 
-首先修改 `chiplab/chip/soc_demo/nscscc-team/soc_config.vh`头文件，打开 `RUN_FUNC_TEST`宏，关闭`RUN_PERF_TEST`宏。之后进行综合、实现、bit生成。
+首先修改 `chiplab/chip/soc_demo/nscscc-team/soc_config.vh`头文件，打开 `RUN_FUNC_TEST`宏，关闭`RUN_PERF_TEST`宏。
 
-2）下载bit文件
+2）修改 IP Sources -> axi_ram -> Other Options -> COE File。之后进行综合、实现、bit生成。(串口下载出错的同学请通过 axi_ram 初始化进行 software 切换)
 
-3）通过UART下载bin文件
+3）下载bit文件
+
+4）通过UART下载bin文件
 
 UART下载功能移植自[tinyriscv](https://gitee.com/liangkangnan/tinyriscv/)，修改了axi总线支持。
 
@@ -347,7 +349,7 @@ bin文件下载完成后会自动复位处理器核，即可看到实验现象�
 
 `python3 ./uart_downloader.py 串口号 reset`
 
-4）观察实验现象
+5）观察实验现象
 在FPGA上板验证时其结果正确与否的判断只有一种方法，func正确的执行行为是：
 
 1.开始，单色LED全灭，双色LED灯一红一绿，数码管显示全0；
@@ -363,11 +365,13 @@ bin文件下载完成后会自动复位处理器核，即可看到实验现象�
 #### 4.3.2 性能测试上板验证
 1）功能/性能测试宏修改
 
-首先修改 `chiplab/chip/soc_demo/nscscc-team/soc_config.vh`头文件，打开 `RUN_PERF_TEST`宏，关闭`RUN_FUNC_TEST`宏，关闭`RUN_PERF_NO_DELAY`宏。之后进行综合、实现、bit生成。
+首先修改 `chiplab/chip/soc_demo/nscscc-team/soc_config.vh`头文件，打开 `RUN_PERF_TEST`宏，关闭`RUN_FUNC_TEST`宏，关闭`RUN_PERF_NO_DELAY`宏。
 
-2）下载bit文件
+2）修改 IP Sources -> axi_ram -> Other Options -> COE File。之后进行综合、实现、bit生成。(串口下载出错的同学请通过 axi_ram 初始化进行 software 切换)
 
-3）通过UART下载bin文件
+3）下载bit文件
+
+4）通过UART下载bin文件
 
 可以下载单个性能测试bin文件，如：
 

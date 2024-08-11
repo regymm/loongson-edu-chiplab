@@ -206,6 +206,7 @@ begin
 	end
 end
 
+/*
 integer software_bin;
 integer err,str;
 reg [31:0] instr;
@@ -225,5 +226,6 @@ initial begin
     end
     $fclose(software_bin);
 end
+*/
 
 endmodule

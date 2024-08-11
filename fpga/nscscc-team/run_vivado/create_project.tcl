@@ -18,3 +18,5 @@ add_files -fileset sim_1 ./testbench
 add_files -fileset constrs_1 -quiet ./constraints
 
 set_property -name "top" -value "tb_top" -objects  [get_filesets sim_1]
+set_property strategy Flow_PerfOptimized_high [get_runs synth_1]
+set_property strategy Performance_Explore [get_runs impl_1]

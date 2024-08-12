@@ -428,6 +428,7 @@ wire  [ 3:0]  uart_wstrb;
 wire  uart_wlast;
 wire  uart_wvalid;
 wire  uart_bready;
+wire  irq_rx;
 
 //for lab6
 wire [4 :0] ram_random_mask;
@@ -682,6 +683,7 @@ uart_debug  u_uart_debug (
     .bid                     ( uart_debug_bid       ),
     .bresp                   ( uart_debug_bresp     ),
     .bvalid                  ( uart_debug_bvalid    ),
+    .irq_rx                  ( irq_rx               ),
 
     .arid                    ( uart_debug_arid      ),
     .araddr                  ( uart_debug_araddr    ),
@@ -902,8 +904,8 @@ confreg #(.SIMULATION(SIMULATION)) u_confreg
 );
 
 uart_wrap  u_uart_wrap (
-    .aclk                    ( sys_clk      ),
-    .aresetn                 ( sys_resetn   ),
+    .aclk                    ( sys_clk        ),
+    .aresetn                 ( sys_resetn     ),
     .arid                    ( uart_arid      ),
     .araddr                  ( uart_araddr    ),
     .arlen                   ( uart_arlen     ),
@@ -929,7 +931,7 @@ uart_wrap  u_uart_wrap (
     .wlast                   ( uart_wlast     ),
     .wvalid                  ( uart_wvalid    ),
     .bready                  ( uart_bready    ),
-    .rx_pin                  ( rx_pin    ),
+    .rx_pin                  ( rx_pin         ),
 
     .arready                 ( uart_arready   ),
     .rid                     ( uart_rid       ),
@@ -942,7 +944,8 @@ uart_wrap  u_uart_wrap (
     .bid                     ( uart_bid       ),
     .bresp                   ( uart_bresp     ),
     .bvalid                  ( uart_bvalid    ),
-    .tx_pin                  ( tx_pin    )
+    .irq_rx                  ( irq_rx         ),
+    .tx_pin                  ( tx_pin         )
 );
 
 endmodule

@@ -27,6 +27,7 @@ module uart(
     input wire[31:0] data_i,
 
     output reg[31:0] data_o,
+    output wire irq_rx,
 	output wire tx_pin,
     input wire rx_pin
 
@@ -88,6 +89,8 @@ module uart(
     reg[31:0] uart_rx;
 
     assign tx_pin = tx_reg;
+
+    assign irq_rx = uart_status[1];
 
 
     // 写寄存器

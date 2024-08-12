@@ -44,7 +44,9 @@ module uart_wrap(
     output         bvalid ,
     input          bready ,
 
-    output         tx_pin,
+    output         irq_rx ,
+
+    output         tx_pin ,
     input          rx_pin
 
 );
@@ -64,6 +66,7 @@ uart  u_uart (
     .raddr_i                ( ram_raddr         ),
     .data_i                 ( ram_wdata         ),
     .data_o                 ( ram_rdata         ),
+    .irq_rx                 ( irq_rx            ),
 
     .rx_pin                 ( rx_pin            ),
     .tx_pin                 ( tx_pin            )

@@ -88,6 +88,8 @@ module uart_debug(
     input           bvalid,
     output          bready,
 
+    input           irq_rx,
+
     //输出处理器核复位信号
     output          core_rst
 
@@ -138,16 +140,7 @@ module uart_debug(
     wire        store_finish;
     wire        load_finish;
 
-    reg [7:0] command_rst_count;
-
-    wire [7:0] debug_rx_data[6:0];
-    assign debug_rx_data[0] = rx_data[0];
-    assign debug_rx_data[1] = rx_data[128];
-    assign debug_rx_data[2] = rx_data[62];
-    assign debug_rx_data[3] = rx_data[63];
-    assign debug_rx_data[4] = rx_data[64];
-    assign debug_rx_data[5] = rx_data[129];
-    assign debug_rx_data[6] = rx_data[130];
+    reg [7:0]   command_rst_count;
 
 /***********************BEGIN of FSM********************************/
     always @(posedge clk or negedge rst_n) begin
@@ -189,7 +182,7 @@ module uart_debug(
                     next_state = S_CLEAR_UART_RX_OVER_FLAG;
             end
             S_WAIT_BYTE : begin
-                if(load_finish & ((rdata & `UART_RX_OVER_FLAG) == `UART_RX_OVER_FLAG))
+                if(irq_rx)
                     next_state = S_WAIT_BYTE2;
                 else
                     next_state = S_WAIT_BYTE;
@@ -314,9 +307,9 @@ module uart_debug(
                 uart_debug_wdata = 32'h0;
             end
             S_WAIT_BYTE : begin
-                uart_debug_req = 1'h1;
+                uart_debug_req = 1'h0;
                 uart_debug_we = 1'h0;
-                uart_debug_addr = `UART_STATUS_REG;
+                uart_debug_addr = 32'h0;
                 uart_debug_wdata = 32'h0;
             end
             S_WAIT_BYTE2 : begin

@@ -183,6 +183,8 @@ module core_top(
 
 特别注意：功能测试和性能测试发布包中默认提供的obj为无chache版本，若实现了cache和cacop指令，需要将`chiplab/fpga/nscscc-team/software/perf/Makefile`文件的第二行改为`AFLAGS+=-Dhas_cache=1`。将`chiplab/fpga/nscscc-team/software/func/Makefile`文件的第七行改为`CACHEFLAGS = -Dvivado -Dhas_cache=1`。该宏置为1后会使用cacop指令在每次复位后执行cache初始化。
 
+同时将`-Dcache_index_depth=0x100 -Dcache_offset_width=0x4 -Dcache_way=2`修改为对应值，分别是index深度，offset位宽，way。
+
 之后重新编译性能测试：
 
 ```

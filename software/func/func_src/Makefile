@@ -1,7 +1,7 @@
 obj_path = ./obj
 inst_srcs = $(wildcard ./inst/*.S)
 EXP = 16
-CACHEFLAGS = -Dhas_cache=0
+CACHEFLAGS = -Dhas_cache=1 -Dcache_index_depth=0x100 -Dcache_offset_width=0x4 -Dcache_way=2
 
 default: 
 	make all

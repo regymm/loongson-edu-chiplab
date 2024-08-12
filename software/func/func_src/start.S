@@ -28,13 +28,29 @@ start:
 #if has_cache==1
     # invalid the old inst in icache and old data in dcache by index
     li.w t0,0x0
-    li.w t2,0x100
+    #li.w t2,0x100
+    li.w t2, cache_index_depth
 1: 
-    slli.w    t1, t0, 0x4
+    #slli.w    t1, t0, 0x4
+    slli.w    t1, t0, cache_offset_width
+#if cache_way==1
+    cacop     0x00, t1, 0x0 
+    cacop     0x01, t1, 0x0
+#elif cache_way==2
     cacop     0x00, t1, 0x0 
     cacop     0x00, t1, 0x1
     cacop     0x01, t1, 0x0
     cacop     0x01, t1, 0x1
+#elif cache_way==4
+    cacop     0x00, t1, 0x0 
+    cacop     0x00, t1, 0x1
+    cacop     0x00, t1, 0x2 
+    cacop     0x00, t1, 0x3
+    cacop     0x01, t1, 0x0
+    cacop     0x01, t1, 0x1
+    cacop     0x01, t1, 0x2
+    cacop     0x01, t1, 0x3
+#endif
     addi.w    t0, t0, 0x1
     bne       t0, t2, 1b
 #else

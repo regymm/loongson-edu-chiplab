@@ -1,5 +1,5 @@
 AFLAGS = -O2 -fno-pic -fno-builtin -I include
-AFLAGS+=-Dhas_cache=0
+AFLAGS+=-Dhas_cache=0 -Dcache_index_depth=0x100 -Dcache_offset_width=0x4 -Dcache_way=2
 
 MEM_DEF= -DMEMSTART=0x10000000 -DMEMSIZE=0x10000
 

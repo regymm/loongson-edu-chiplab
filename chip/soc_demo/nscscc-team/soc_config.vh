@@ -6,3 +6,7 @@
 `ifdef RUN_PERF_TEST
 // `define RUN_PERF_NO_DELAY
 `endif
+
+//串口下程序波特率二选一
+// `define uart_debug_baudrate_115200
+`define uart_debug_baudrate_19200

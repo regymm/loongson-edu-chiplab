@@ -13,9 +13,15 @@
  See the License for the specific language governing permissions and     
  limitations under the License.                                          
  */
+`include "../soc_config.vh"
 
+`ifdef uart_debug_baudrate_115200
 // clk = 100MHz时对应的波特率115200分频系数
-`define UART_BAUD_115200        32'h364
+`define UART_BAUD               32'h364
+`else
+// clk = 100MHz时对应的波特率19200分频系数
+`define UART_BAUD               32'h1458
+`endif
 
 // 串口寄存器物理地址
 `define UART_CTRL_REG           32'h1eaf0000
@@ -286,7 +292,7 @@ module uart_debug(
                 uart_debug_req = 1'h1;
                 uart_debug_we = 1'h1;
                 uart_debug_addr = `UART_BAUD_REG;
-                uart_debug_wdata = `UART_BAUD_115200;
+                uart_debug_wdata = `UART_BAUD;
             end
             S_REC_FIRST_PACKET : begin
                 uart_debug_req = 1'h0;

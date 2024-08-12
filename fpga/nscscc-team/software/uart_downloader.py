@@ -49,6 +49,8 @@ import serial
 |-------------------------------------------------------------------|
 '''
 
+#根据情况修改波特率，RS232常用波特率：300 1200 2400 9600 19200 115200
+UART_BAUDRATE = 19200
 
 ACK = bytes([0x6])
 FIRST_PACKET_LEN = 131
@@ -58,7 +60,6 @@ FIRST_PACKET_CRC0_INDEX = 129
 FIRST_PACKET_CRC1_INDEX = 130
 OTHER_PACKET_LEN = 131
 
-
 serial_com = serial.Serial()
 
 
@@ -66,7 +67,7 @@ serial_com = serial.Serial()
 # 串口参数：115200, 8 N 1
 def serial_init():
     serial_com.port = sys.argv[1]
-    serial_com.baudrate = 115200
+    serial_com.baudrate = UART_BAUDRATE
     serial_com.bytesize = serial.EIGHTBITS
     serial_com.parity = serial.PARITY_NONE
     serial_com.stopbits = serial.STOPBITS_ONE

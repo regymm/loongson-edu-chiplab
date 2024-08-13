@@ -852,7 +852,8 @@ confreg #(.SIMULATION(SIMULATION)) u_confreg
 (
     .timer_clk   ( sys_clk          ),  // i, 1   
     .aclk        ( sys_clk          ),  // i, 1   
-    .aresetn     ( confreg_resetn   ),  // i, 1    
+    .aresetn     ( confreg_resetn   ),  // i, 1   
+    .sys_resetn  ( sys_resetn       ),    
 
     .arid        (conf_arid    ),
     .araddr      (conf_araddr  ),

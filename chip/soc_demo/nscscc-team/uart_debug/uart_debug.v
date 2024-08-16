@@ -148,6 +148,8 @@ module uart_debug(
     wire        store_finish;
     wire        load_finish;
 
+    reg [15:0]  wait_byte_count;
+
     reg [7:0]   command_rst_count;
 
 /***********************BEGIN of FSM********************************/
@@ -211,6 +213,8 @@ module uart_debug(
                 //if(irq_rx)
                 if(load_finish & (((rdata>>8) & `UART_DATA_READY) == `UART_DATA_READY))
                     next_state = S_WAIT_BYTE2;
+                else if(wait_byte_count == 16'hffff)
+                    next_state = S_SEND_NAK;
                 else
                     next_state = S_WAIT_BYTE;
             end
@@ -569,6 +573,21 @@ module uart_debug(
                     rec_bytes_index <= 8'h0;
                 end
             endcase
+        end
+    end
+
+    // 超时检测
+    always @ (posedge clk or negedge rst_n) begin
+        if (~rst_n) begin
+            wait_byte_count <= 16'h0;
+        end
+        else begin
+            if((state == S_WAIT_BYTE) && (rec_bytes_index > 8'h0) && load_finish)
+                wait_byte_count <= wait_byte_count + 1'h1;
+            else if(state == S_WAIT_BYTE2 && load_finish)
+                wait_byte_count <= 16'h0;
+            else
+                wait_byte_count <= wait_byte_count;
         end
     end
 

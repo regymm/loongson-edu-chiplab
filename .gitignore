@@ -14,3 +14,4 @@ fpga/nscscc-team/run_vivado/*.dmp
 fpga/nscscc-team/run_vivado/*.log
 fpga/nscscc-team/run_vivado/project
 fpga/nscscc-team/software/perf/bench/*/*.a
+chip/soc_demo/nscscc-team/uart_debug/testbench

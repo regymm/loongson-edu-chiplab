@@ -153,6 +153,33 @@ def main():
                     print('reset packet retransmit fail')
                     serial_deinit()
                     return
+        elif(sys.argv[2] == 'close') :
+            packet = [0] * FIRST_PACKET_LEN
+            packet[0] = 0x11
+            packet[128] = 0x11
+            crc = calc_crc16(packet[1:129])
+            # CRC
+            packet[FIRST_PACKET_CRC0_INDEX] = (crc >> 0) & 0xff
+            packet[FIRST_PACKET_CRC1_INDEX] = (crc >> 8) & 0xff
+            transcount = 0
+            for transcount in range(RETRANSMISSION):
+                serial_write(bytes(packet))
+                ack = serial_read(1, 3)
+                if (ack == ACK):
+                    print('has closed uart_debug module')
+                    break
+                elif (ack == NAK) and (transcount < RETRANSMISSION -1):
+                    print('close packet crc error, retransmit')
+                elif (ack == NAK) and (transcount == RETRANSMISSION -1):
+                    print('close packet retransmit fail')
+                    serial_deinit()
+                    return
+                elif (ack == -1) and (transcount < RETRANSMISSION -1):
+                    print('close packet timeout, retransmit')
+                elif (ack == -1) and (transcount == RETRANSMISSION -1):
+                    print('close packet retransmit fail')
+                    serial_deinit()
+                    return
         else :
             bin_file_size = os.path.getsize(sys.argv[2])
             print('bin file size: %d bytes' % bin_file_size)

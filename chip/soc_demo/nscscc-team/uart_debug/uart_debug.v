@@ -16,15 +16,15 @@
 `include "../soc_config.vh"
 
 // 串口寄存器物理地址
-`define OFS_FIFO                32'h1ea00002
-`define OFS_LINE_CONTROL        32'h1ea00003
-`define OFS_DIVISOR_MSB         32'h1ea00001
-`define OFS_DIVISOR_LSB         32'h1ea00000
-`define OFS_DATA_FORMAT         32'h1ea00003
-`define OFS_MODEM_CONTROL       32'h1ea00004
-`define OFS_LINE_STATUS         32'h1ea00005
-`define UART_TX_REG             32'h1ea00000
-`define UART_RX_REG             32'h1ea00000
+`define OFS_FIFO                32'h1fe00002
+`define OFS_LINE_CONTROL        32'h1fe00003
+`define OFS_DIVISOR_MSB         32'h1fe00001
+`define OFS_DIVISOR_LSB         32'h1fe00000
+`define OFS_DATA_FORMAT         32'h1fe00003
+`define OFS_MODEM_CONTROL       32'h1fe00004
+`define OFS_LINE_STATUS         32'h1fe00005
+`define UART_TX_REG             32'h1fe00000
+`define UART_RX_REG             32'h1fe00000
 
 `define UART_DATA_READY          32'h1
 `define UART_TRANSMIT_FIFO_EMPTY 32'h20
@@ -119,6 +119,7 @@ module uart_debug(
     localparam  S_CRC_END                   = 5'd18;
     localparam  S_WRITE_MEM                 = 5'd19;
     localparam  S_CORE_RESET                = 5'd20;
+    localparam  S_CLOSE                     = 5'd21;
 
     reg[4:0]    state;
     reg[4:0]    next_state;
@@ -274,6 +275,9 @@ module uart_debug(
                         if(rx_data[0] == 8'hff && rx_data[128] == 8'hff)begin
                             next_state = S_CORE_RESET;
                         end
+                        else if(rx_data[0] == 8'h11 && rx_data[128] == 8'h11)begin
+                            next_state = S_CLOSE;
+                        end
                         else begin
                             next_state = S_REC_FIRST_PACKET;
                         end
@@ -306,6 +310,9 @@ module uart_debug(
                     next_state = S_REC_FIRST_PACKET;
                 else
                     next_state = S_CORE_RESET;
+            end
+            S_CLOSE: begin
+                next_state = S_CLOSE;
             end
             default     :begin
                 next_state = S_IDLE;
@@ -456,6 +463,13 @@ module uart_debug(
                 uart_debug_stb = 1'h1;
             end
             S_CORE_RESET : begin
+                uart_debug_req = 1'h0;
+                uart_debug_we = 1'h0;
+                uart_debug_addr = 32'h0;
+                uart_debug_wdata = 32'h0;
+                uart_debug_stb = 1'h0;
+            end
+            S_CLOSE : begin
                 uart_debug_req = 1'h0;
                 uart_debug_we = 1'h0;
                 uart_debug_addr = 32'h0;

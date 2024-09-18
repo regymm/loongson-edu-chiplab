@@ -4,7 +4,7 @@
 
 bsp中包含三个文件夹——drivers、env、include。drivers用于保存外设驱动程序，目前仅包含CONFREG中的TIMER的驱动，用于获取时间。env文件夹中包含启动文件start.s、链接脚本separate.lds、bin转mif和coe的C程序convert.c。include是板级支持包的头文件目录。common.mk是公用Makefile，用于将板级支持包的内容添加进编译过程中。
 
-## 2. 使用picolbc/newlib
+## 2. 使用picolibc/newlib
 
 Makefile默认使用picolib，若使用newlib，首先将`examples/*/Makefile`文件中的
 

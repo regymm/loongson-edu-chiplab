@@ -5,7 +5,7 @@
 CFLAGS="-nostdlib -mlong-calls -static -nostdinc -fno-builtin"
 LFLAGS="-L../../toolchains/system_newlib/ -Wl,-T../../toolchains/system_newlib/pmon.ld -lc -lm -lg -lpmon -lgcc"
 
-KERNEL_ENTRY_INFO=`../../toolchains/loongarch32r-linux-gnusf-*/bin/loongarch32r-linux-gnusf-readelf -s vmlinux | grep kernel_entry`
+KERNEL_ENTRY_INFO=`loongarch32r-linux-gnusf-readelf -s vmlinux | grep kernel_entry`
 KERNEL_ENTRY_ADDRESS=`echo ${KERNEL_ENTRY_INFO: 8: 8}`
 
 loongarch32r-linux-gnusf-gcc -DKERNEL_ENTRY_ADDRESS=0x${KERNEL_ENTRY_ADDRESS} -c start.S -o start.o
